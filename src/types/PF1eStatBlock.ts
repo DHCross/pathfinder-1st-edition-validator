@@ -55,6 +55,16 @@ export interface PF1eStatBlock {
   // Claim fields for validation results
   claimedLevel?: number;
   claimedEffectiveLevel?: number;
+
+  // NEW: Claimed stats for benchmarking
+  ac_claimed?: number;
+  touch_ac_claimed?: number;
+  flat_footed_ac_claimed?: number;
+  hp_claimed?: number;
+  bab_claimed?: number;
+  fort_save_claimed?: number;
+  ref_save_claimed?: number;
+  will_save_claimed?: number;
 }
 
 export interface ValidationMessage {
