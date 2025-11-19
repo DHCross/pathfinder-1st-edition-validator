@@ -1,5 +1,5 @@
 import type { PF1eStatBlock, ValidationMessage, ValidationResult } from '../types/PF1eStatBlock';
-import { SizeConstants, ClassStatistics, CRToXPVariants } from '../rules/pf1e-data-tables';
+import { SizeConstants, ClassStatistics, XP_Table } from '../rules/pf1e-data-tables';
 
 /**
  * Smart basics validator adapted to this repo's data shapes.
@@ -83,17 +83,17 @@ export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
     });
   }
 
-  // --- 4. XP vs CR ---
-  const crKey = block.cr_text || block.cr;
-  const xpVariants = CRToXPVariants[crKey as keyof typeof CRToXPVariants];
-  if (block.xp !== undefined && xpVariants) {
-    // If multiple variants exist, accept any of them; otherwise strict-equal
-    if (!Array.isArray(xpVariants)) {
-      if (block.xp !== xpVariants) {
-        messages.push({ severity: 'warning', category: 'basics', message: `XP ${block.xp} does not match expected value ${xpVariants} for CR ${crKey}.` });
-      }
-    } else if (!xpVariants.includes(block.xp)) {
-      messages.push({ severity: 'warning', category: 'basics', message: `XP ${block.xp} does not match expected variants [${xpVariants.join(', ')}] for CR ${crKey}.` });
+  // --- 4. XP vs CR (The "Rules Lawyer" Check) ---
+  const crKey = String(block.cr);
+  const expectedXP = XP_Table[crKey];
+  
+  if (block.xp !== undefined && expectedXP !== undefined) {
+    if (block.xp !== expectedXP) {
+      messages.push({ 
+        severity: 'warning', 
+        category: 'basics', 
+        message: `XP ${block.xp} does not match canonical value ${expectedXP} for CR ${crKey}. (Source: Core Rulebook Experience Point Awards table)` 
+      });
     }
   }
 
