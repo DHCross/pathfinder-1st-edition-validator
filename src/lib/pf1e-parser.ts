@@ -1,32 +1,43 @@
 import { PF1eStatBlock } from '../types/PF1eStatBlock';
 import { CreatureSize, CreatureType, ChallengeRatingValue } from '../rules/pf1e-data-tables';
 
+/**
+ * Cleans markdown artifacts and normalizes text for parsing
+ */
+function cleanText(text: string): string {
+  return text
+    .replace(/\*\*/g, '') // Remove bold **
+    .replace(/\*/g, '')   // Remove italics *
+    .replace(/__/g, '')   // Remove underline __
+    .replace(/\u2013|\u2014/g, '-') // Normalize en-dash/em-dash to hyphen
+    .replace(/\u2212/g, '-') // Normalize minus sign
+    .replace(/\n/g, ' ')  // Flatten newlines
+    .replace(/\s+/g, ' ') // Collapse multiple spaces
+    .trim();
+}
+
 export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+  
+  // 1. Clean the text BEFORE parsing
+  const fullText = cleanText(rawText);
+
   const block: Partial<PF1eStatBlock> = {
-    name: lines[0] || 'Unnamed Creature',
+    name: lines[0]?.replace(/\*/g, '') || 'Unnamed Creature', // Clean name too
     classLevels: [],
     feats: [],
-    str: 10,
-    dex: 10,
-    con: 10,
-    int: 10,
-    wis: 10,
-    cha: 10,
-    hp: 10,
-    ac: 10,
-    fort: 0,
-    ref: 0,
-    will: 0,
-    bab: 0,
+    // Defaults
+    str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10,
+    hp: 10, ac: 10, fort: 0, ref: 0, will: 0, bab: 0,
     cr: '1' as ChallengeRatingValue,
     size: 'Medium' as CreatureSize,
     type: 'humanoid' as CreatureType,
   };
 
-  // --- REGEX PATTERNS (robust variants) ---
+  // --- REGEX PATTERNS ---
   const crRegex = /(?:CR|Challenge Rating)\s*(\d+(?:[\/\.]\d+)?)/i;
   const xpRegex = /XP\s*([0-9,]+)/i;
+  // Type regex now handles "Chaos-Beast" and other hyphenated types better
   const typeRegex = /(LG|NG|CG|LN|N|CN|LE|NE|CE)\s+(Fine|Diminutive|Tiny|Small|Medium|Large|Huge|Gargantuan|Colossal)\s+([a-zA-Z\-\s]+)/i;
   const acRegex = /AC\s*(\d+)/i;
   const touchAcRegex = /touch\s*(\d+)/i;
@@ -35,22 +46,23 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   const saveRegex = /Fort\s*\+?(-?\d+),\s*Ref\s*\+?(-?\d+),\s*Will\s*\+?(-?\d+)/i;
   const babRegex = /(?:Base Atk|Base Atk\.|Base Attack)\s*\+?(\d+)/i;
   const cmdRegex = /CMD\s*(\d+)/i;
-  const featsRegex = /Feats[:\s]+(.+?)(?:;|$|Skills|Languages|SQ|Ecology)/i;
-  const treasureRegex = /Treasure\s+(.+?)(?:$|\n)/i;
+  // Feats: Stop at common section headers to prevent reading the whole bio
+  const featsRegex = /Feats[:\s]+(.+?)(?:;|$|Skills|Languages|SQ|Ecology|Special Abilities)/i;
+  const treasureRegex = /Treasure\s+(.+?)(?:$|\n|Special)/i;
 
-  let fullText = rawText.replace(/\n/g, ' ');
+  // --- PARSING ---
 
   // 1. CR & XP
   const crMatch = fullText.match(crRegex);
-  if (crMatch) {
-    block.cr = crMatch[1] as ChallengeRatingValue;
-  }
+  if (crMatch) block.cr = crMatch[1] as ChallengeRatingValue;
+
   const xpMatch = fullText.match(xpRegex);
   if (xpMatch) block.xp = parseInt(xpMatch[1].replace(/,/g, ''));
 
   // 2. Size & Type
   const typeMatch = fullText.match(typeRegex);
   if (typeMatch) {
+    block.alignment = typeMatch[1]; // Capture alignment
     block.size = typeMatch[2] as CreatureSize;
     block.type = typeMatch[3].trim() as CreatureType;
   }
@@ -58,8 +70,10 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   // 3. Defense
   const acMatch = fullText.match(acRegex);
   if (acMatch) block.ac_claimed = parseInt(acMatch[1]);
+  
   const touchMatch = fullText.match(touchAcRegex);
   if (touchMatch) block.touch_ac_claimed = parseInt(touchMatch[1]);
+  
   const ffMatch = fullText.match(ffAcRegex);
   if (ffMatch) block.flat_footed_ac_claimed = parseInt(ffMatch[1]);
 
@@ -84,7 +98,7 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
       block.will = parseInt(saveMatch[3]);
   }
 
-  // 4. Offense (BAB/CMD)
+  // 4. Offense
   const babMatch = fullText.match(babRegex);
   if (babMatch) {
     block.bab_claimed = parseInt(babMatch[1]);
@@ -96,7 +110,8 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
     block.cmd = parseInt(cmdMatch[1]);
   }
 
-  // 5. Ability Scores (flexible: support commas or spaces)
+  // 5. Ability Scores
+  // Now robust against "**Str**" because cleanText() removed the stars
   const strMatch = /Str\s*(\d+)/i.exec(fullText);
   const dexMatch = /Dex\s*(\d+)/i.exec(fullText);
   const conMatch = /Con\s*(\d+)/i.exec(fullText);
@@ -117,10 +132,10 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   if (block.flat_footed_ac_claimed) block.flatFooted = block.flat_footed_ac_claimed;
 
   // 6. Feats
-    const featsMatch = fullText.match(featsRegex);
-    if (featsMatch) {
-      block.feats = featsMatch[1].split(/[,;]+/).map(f => f.trim()).filter(Boolean);
-    }
+  const featsMatch = fullText.match(featsRegex);
+  if (featsMatch) {
+    block.feats = featsMatch[1].split(/[,;]+/).map(f => f.trim()).filter(Boolean);
+  }
 
   // 7. Treasure
   const treasureMatch = fullText.match(treasureRegex);
