@@ -1,0 +1,31 @@
+{
+  "name": "pathfinder-1e-validator",
+  "version": "0.1.0",
+  "description": "Rules validation engine for Pathfinder 1st Edition stat blocks",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "keywords": [
+    "pathfinder",
+    "pf1e",
+    "rpg",
+    "validation",
+    "tabletop",
+    "rules-engine"
+  ],
+  "author": "Dan Cross",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
