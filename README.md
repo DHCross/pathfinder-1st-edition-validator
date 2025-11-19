@@ -125,6 +125,10 @@ See the `Rules/` directory for detailed specifications:
 - **Treasure and XP Validation**: CR-to-XP-to-Treasure relationships
 - **Gear Validation**: Three Economic Tiers and pricing algorithms
 
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for a history of notable changes.
+
 ## Contributing
 
 This is a personal project, but suggestions and feedback are welcome via issues.

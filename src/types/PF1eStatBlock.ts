@@ -68,4 +68,6 @@ export interface ValidationMessage {
 export interface ValidationResult {
   valid: boolean;
   messages: ValidationMessage[];
+  // Optional derived status used by UI/stories: 'PASS' | 'WARN' | 'FAIL'
+  status?: 'PASS' | 'WARN' | 'FAIL';
 }

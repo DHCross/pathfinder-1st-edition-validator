@@ -73,10 +73,19 @@ export function validateEconomy(statBlock: PF1eStatBlock): ValidationResult {
     });
   }
 
+  // Derive a simple status for UI: error -> FAIL, warning -> WARN, else PASS
+  let status: 'PASS' | 'WARN' | 'FAIL' = 'PASS';
+  if (messages.some((m) => m.severity === 'error')) {
+    status = 'FAIL';
+  } else if (messages.some((m) => m.severity === 'warning')) {
+    status = 'WARN';
+  }
+
   return {
     valid: Math.abs(deviationPercent) <= TOLERANCE_PERCENT,
     messages,
-  };
+    status,
+  } as any;
 }
 
 /**
