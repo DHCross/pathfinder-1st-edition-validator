@@ -1,29 +1,39 @@
+
 import { PF1eStatBlock } from '../types/PF1eStatBlock';
 import { CreatureSize, CreatureType, ChallengeRatingValue } from '../rules/pf1e-data-tables';
 
 /**
- * Cleans markdown artifacts and normalizes text for parsing
+ * Cleans text from multiple sources (Markdown, HTML, Word)
+ * Normalizes everything to standard ASCII for the parser.
  */
 function cleanText(text: string): string {
   return text
-    .replace(/\*\*/g, '') // Remove bold **
-    .replace(/\*/g, '')   // Remove italics *
-    .replace(/__/g, '')   // Remove underline __
-    .replace(/\u2013|\u2014/g, '-') // Normalize en-dash/em-dash to hyphen
-    .replace(/\u2212/g, '-') // Normalize minus sign
-    .replace(/\n/g, ' ')  // Flatten newlines
-    .replace(/\s+/g, ' ') // Collapse multiple spaces
+    // 1. Markdown Artifacts
+    .replace(/\*\*/g, '')   // Remove bold **
+    .replace(/\*/g, '')     // Remove italics *
+    .replace(/__/g, '')     // Remove underline __
+    .replace(/_/g, '')      // Remove underline _
+    // 2. Word/HTML Artifacts (Smart Punctuation)
+    .replace(/[\u2018\u2019]/g, "'") // Smart single quotes -> '
+    .replace(/[\u201C\u201D]/g, '"') // Smart double quotes -> "
+    .replace(/[\u2013\u2014]/g, '-') // En-dash/Em-dash -> -
+    .replace(/\u2212/g, '-')         // Minus sign -> -
+    .replace(/\u00A0/g, ' ')         // Non-breaking space -> space
+    // 3. Whitespace Normalization
+    .replace(/\n/g, ' ')    // Flatten newlines
+    .replace(/\s+/g, ' ')   // Collapse multiple spaces
     .trim();
 }
 
 export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
-  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-  
-  // 1. Clean the text BEFORE parsing
+  // Clean the text BEFORE parsing
   const fullText = cleanText(rawText);
+  
+  // Split lines for Name detection (using the raw text to preserve structure if needed)
+  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
 
   const block: Partial<PF1eStatBlock> = {
-    name: lines[0]?.replace(/\*/g, '') || 'Unnamed Creature', // Clean name too
+    name: cleanText(lines[0] || 'Unnamed Creature'), // Clean name too
     classLevels: [],
     feats: [],
     // Defaults
@@ -37,7 +47,7 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   // --- REGEX PATTERNS ---
   const crRegex = /(?:CR|Challenge Rating)\s*(\d+(?:[\/\.]\d+)?)/i;
   const xpRegex = /XP\s*([0-9,]+)/i;
-  // Type regex now handles "Chaos-Beast" and other hyphenated types better
+  // Robust Type regex handles "Chaos-Beast" and standard types
   const typeRegex = /(LG|NG|CG|LN|N|CN|LE|NE|CE)\s+(Fine|Diminutive|Tiny|Small|Medium|Large|Huge|Gargantuan|Colossal)\s+([a-zA-Z\-\s]+)/i;
   const acRegex = /AC\s*(\d+)/i;
   const touchAcRegex = /touch\s*(\d+)/i;
@@ -62,7 +72,7 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   // 2. Size & Type
   const typeMatch = fullText.match(typeRegex);
   if (typeMatch) {
-    block.alignment = typeMatch[1]; // Capture alignment
+    block.alignment = typeMatch[1];
     block.size = typeMatch[2] as CreatureSize;
     block.type = typeMatch[3].trim() as CreatureType;
   }
@@ -111,7 +121,7 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   }
 
   // 5. Ability Scores
-  // Now robust against "**Str**" because cleanText() removed the stars
+  // Cleaned text means "Str" will match "**Str**" or "Str:"
   const strMatch = /Str\s*(\d+)/i.exec(fullText);
   const dexMatch = /Dex\s*(\d+)/i.exec(fullText);
   const conMatch = /Con\s*(\d+)/i.exec(fullText);
@@ -125,11 +135,6 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   if (intMatch) block.int = parseInt(intMatch[1]);
   if (wisMatch) block.wis = parseInt(wisMatch[1]);
   if (chaMatch) block.cha = parseInt(chaMatch[1]);
-
-  // Also copy claimed AC values to base AC fields
-  if (block.ac_claimed) block.ac = block.ac_claimed;
-  if (block.touch_ac_claimed) block.touch = block.touch_ac_claimed;
-  if (block.flat_footed_ac_claimed) block.flatFooted = block.flat_footed_ac_claimed;
 
   // 6. Feats
   const featsMatch = fullText.match(featsRegex);
