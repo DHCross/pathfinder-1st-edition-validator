@@ -24,19 +24,18 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
     type: 'humanoid' as CreatureType,
   };
 
-  // --- REGEX PATTERNS ---
-  const crRegex = /(?:CR|Challenge Rating)\s*(\d+(?:\/\d+)?)/i;
+  // --- REGEX PATTERNS (robust variants) ---
+  const crRegex = /(?:CR|Challenge Rating)\s*(\d+(?:[\/\.]\d+)?)/i;
   const xpRegex = /XP\s*([0-9,]+)/i;
-  const typeRegex = /(LG|NG|CG|LN|N|CN|LE|NE|CE)\s+(Fine|Diminutive|Tiny|Small|Medium|Large|Huge|Gargantuan|Colossal)\s+([a-zA-Z\s]+)/i;
+  const typeRegex = /(LG|NG|CG|LN|N|CN|LE|NE|CE)\s+(Fine|Diminutive|Tiny|Small|Medium|Large|Huge|Gargantuan|Colossal)\s+([a-zA-Z\-\s]+)/i;
   const acRegex = /AC\s*(\d+)/i;
   const touchAcRegex = /touch\s*(\d+)/i;
   const ffAcRegex = /flat-footed\s*(\d+)/i;
   const hpRegex = /(?:hp|HP)\s*(\d+)\s*(?:\(([^)]+)\))?/i;
   const saveRegex = /Fort\s*\+?(-?\d+),\s*Ref\s*\+?(-?\d+),\s*Will\s*\+?(-?\d+)/i;
-  const statRegex = /Str\s*(\d+),\s*Dex\s*(\d+),\s*Con\s*(\d+),\s*Int\s*(\d+),\s*Wis\s*(\d+),\s*Cha\s*(\d+)/i;
-  const babRegex = /Base Atk\s*\+?(\d+)/i;
+  const babRegex = /(?:Base Atk|Base Atk\.|Base Attack)\s*\+?(\d+)/i;
   const cmdRegex = /CMD\s*(\d+)/i;
-  const featsRegex = /Feats\s+(.+?)(?:Skills|Treasure|Languages|SQ|Ecology|$)/i;
+  const featsRegex = /Feats[:\s]+(.+?)(?:;|$|Skills|Languages|SQ|Ecology)/i;
   const treasureRegex = /Treasure\s+(.+?)(?:$|\n)/i;
 
   let fullText = rawText.replace(/\n/g, ' ');
@@ -85,7 +84,7 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
       block.will = parseInt(saveMatch[3]);
   }
 
-  // 4. Offense
+  // 4. Offense (BAB/CMD)
   const babMatch = fullText.match(babRegex);
   if (babMatch) {
     block.bab_claimed = parseInt(babMatch[1]);
@@ -97,16 +96,20 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
     block.cmd = parseInt(cmdMatch[1]);
   }
 
-  // 5. Ability Scores
-  const statMatch = fullText.match(statRegex);
-  if (statMatch) {
-    block.str = parseInt(statMatch[1]);
-    block.dex = parseInt(statMatch[2]);
-    block.con = parseInt(statMatch[3]);
-    block.int = parseInt(statMatch[4]);
-    block.wis = parseInt(statMatch[5]);
-    block.cha = parseInt(statMatch[6]);
-  }
+  // 5. Ability Scores (flexible: support commas or spaces)
+  const strMatch = /Str\s*(\d+)/i.exec(fullText);
+  const dexMatch = /Dex\s*(\d+)/i.exec(fullText);
+  const conMatch = /Con\s*(\d+)/i.exec(fullText);
+  const intMatch = /Int\s*(\d+)/i.exec(fullText);
+  const wisMatch = /Wis\s*(\d+)/i.exec(fullText);
+  const chaMatch = /Cha\s*(\d+)/i.exec(fullText);
+
+  if (strMatch) block.str = parseInt(strMatch[1]);
+  if (dexMatch) block.dex = parseInt(dexMatch[1]);
+  if (conMatch) block.con = parseInt(conMatch[1]);
+  if (intMatch) block.int = parseInt(intMatch[1]);
+  if (wisMatch) block.wis = parseInt(wisMatch[1]);
+  if (chaMatch) block.cha = parseInt(chaMatch[1]);
 
   // Also copy claimed AC values to base AC fields
   if (block.ac_claimed) block.ac = block.ac_claimed;
@@ -114,10 +117,10 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   if (block.flat_footed_ac_claimed) block.flatFooted = block.flat_footed_ac_claimed;
 
   // 6. Feats
-  const featsMatch = fullText.match(featsRegex);
-  if (featsMatch) {
-      block.feats = featsMatch[1].split(',').map(f => f.trim().replace(/[;.]$/, ''));
-  }
+    const featsMatch = fullText.match(featsRegex);
+    if (featsMatch) {
+      block.feats = featsMatch[1].split(/[,;]+/).map(f => f.trim()).filter(Boolean);
+    }
 
   // 7. Treasure
   const treasureMatch = fullText.match(treasureRegex);
