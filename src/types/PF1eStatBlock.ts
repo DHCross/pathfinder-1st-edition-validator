@@ -47,6 +47,9 @@ export interface PF1eStatBlock {
   wis: number;
   cha: number;
 
+  // Feats
+  feats?: string[];
+
   // Economy & Gear
   economicTier?: EconomicTier;
   treasureType?: 'None' | 'Incidental' | 'Standard' | 'Double' | 'Triple' | 'NPC Gear';
@@ -62,6 +65,7 @@ export interface PF1eStatBlock {
   flat_footed_ac_claimed?: number;
   hp_claimed?: number;
   bab_claimed?: number;
+  cmd_claimed?: number;
   fort_save_claimed?: number;
   ref_save_claimed?: number;
   will_save_claimed?: number;
