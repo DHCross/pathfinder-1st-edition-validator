@@ -61,8 +61,11 @@ export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, v
           </p>
         </div>
         {/* Overall Status Badge */}
-        <span style={{ padding: '0.25rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 'bold', border: '1px solid', ...getStatusStyle(validation.status || 'PASS') }}>
-            {validation.status} {validationTarget ? `(${validationTarget === 'fixed' ? 'Fixed' : 'Raw'})` : ''}
+        <span
+          title={validationTarget === 'fixed' ? 'Validating fixed (auto-fixed) version — see right panel' : 'Validating raw input version'}
+          style={{ padding: '0.25rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 'bold', border: '1px solid', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', ...getStatusStyle(validation.status || 'PASS') }}
+        >
+            {validation.status} {validationTarget ? `(${validationTarget === 'fixed' ? 'Fixed' : 'Raw'})` : ''} {validationTarget === 'fixed' && '➡️'}
         </span>
       </div>
 
