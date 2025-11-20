@@ -1,74 +1,40 @@
-import type { PF1eStatBlock, ValidationMessage, ValidationResult } from '../types/PF1eStatBlock';
-import { SizeConstants, ClassStatistics, XP_Table, CreatureTypeRules } from '../rules/pf1e-data-tables';
+import { PF1eStatBlock, ValidationResult, ValidationMessage } from '../types/PF1eStatBlock';
+import { SizeConstants, ClassStatistics, XP_Table, CreatureTypeRules } from '../rules/pf1e-data-tables'; 
 
-/**
- * Smart basics validator adapted to this repo's data shapes.
- * - Calculates total HD and expected BAB from class levels AND racial HD
- * - Computes expected CMD using size modifiers
- * - Validates feat counts and XP vs CR (when possible)
- */
-export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
+export function validateBasics(block: PF1eStatBlock): ValidationResult {
   const messages: ValidationMessage[] = [];
-
-  if (!block) {
-    messages.push({ severity: 'error', category: 'basics', message: 'No stat block provided.' });
-    return { valid: false, messages, status: 'FAIL' } as any;
-  }
-
-  // Normalize alternate field names that sometimes appear in demo data
-  const classLevels = block.classLevels || block.class_levels || [];
-  const racialHD = block.racialHD ?? block.racial_hd_count ?? 0;
-  const creatureType = block.type || 'Humanoid';
-
-  // --- 1. CHASSIS CALCULATION (HD & BAB) ---
-  let totalHD = 0;
+  
+  // --- 1. CHASSIS CALCULATION ---
+  let totalHD = (block.racialHD || 0);
   let expectedBAB = 0;
-
+  
   // Racial BAB
-  if (racialHD && typeof racialHD === 'number') {
-    totalHD += racialHD;
-    
-    const typeRule = CreatureTypeRules[creatureType as import('../rules/pf1e-data-tables').CreatureType];
-    if (typeRule) {
-        if (typeRule.babProgression === 'fast') expectedBAB += racialHD;
-        else if (typeRule.babProgression === 'medium') expectedBAB += Math.floor(racialHD * 0.75);
-        else expectedBAB += Math.floor(racialHD * 0.5);
-    } else {
-        // Fallback
-        expectedBAB += Math.floor(racialHD * 0.75);
-    }
+  if (block.racialHD && block.racialHD > 0) {
+      const typeRule = CreatureTypeRules[block.type];
+      if (typeRule) {
+          if (typeRule.babProgression === 'fast') expectedBAB += block.racialHD;
+          else if (typeRule.babProgression === 'medium') expectedBAB += Math.floor(block.racialHD * 0.75);
+          else expectedBAB += Math.floor(block.racialHD * 0.5);
+      } else {
+           expectedBAB += Math.floor(block.racialHD * 0.75);
+      }
   }
 
   // Class BAB
-  for (const cls of classLevels) {
-    const className = cls.className || cls.class_name;
-    const levelCount = cls.level ?? cls.level_count ?? cls.level_count ?? 0;
-    const stats = ClassStatistics[className as import('../rules/pf1e-data-tables').PfClassName];
-
-    if (!stats) {
-      messages.push({
-        severity: 'warning',
-        category: 'basics',
-        message: `Class '${className}' not found in data tables.`,
-      });
-      totalHD += levelCount;
-      continue;
+  for (const cls of block.classLevels || []) {
+    const stats = ClassStatistics[cls.className];
+    if (stats) {
+        totalHD += cls.level;
+        if (stats.babProgression === 'fast') expectedBAB += cls.level;
+        else if (stats.babProgression === 'medium') expectedBAB += Math.floor(cls.level * 0.75);
+        else expectedBAB += Math.floor(cls.level * 0.5);
     }
-
-    totalHD += levelCount;
-
-    const prog = (stats.babProgression || '').toString().toLowerCase();
-    if (prog === 'fast') expectedBAB += levelCount;
-    else if (prog === 'medium') expectedBAB += Math.floor(levelCount * 0.75);
-    else expectedBAB += Math.floor(levelCount * 0.5);
   }
 
   // --- 2. DERIVED STATS & SIZE MODIFIERS ---
-  const sizeData = SizeConstants[block.size as import('../rules/pf1e-data-tables').CreatureSize] || { acAttackMod: 0, cmbCmdMod: 0, stealthMod: 0 };
-  const str = block.str ?? block.ability_scores?.str ?? 10;
-  const dex = block.dex ?? block.ability_scores?.dex ?? 10;
-  const strMod = Math.floor((str - 10) / 2);
-  const dexMod = Math.floor((dex - 10) / 2);
+  const sizeData = SizeConstants[block.size] || { acAttackMod: 0, cmbCmdMod: 0 };
+  const strMod = Math.floor(((block.str || 10) - 10) / 2);
+  const dexMod = Math.floor(((block.dex || 10) - 10) / 2);
 
   // A. Validate BAB (The Root Cause)
   let babStatus: 'MATCH' | 'MISMATCH' = 'MATCH';
@@ -115,40 +81,37 @@ export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
       }
   }
 
-  // --- 3. FEAT COUNT ---
-  // Rule: 1 feat at 1 HD, then +1 feat for every 2 HD thereafter (approximation)
-  const expectedFeats = Math.ceil(totalHD / 2);
-  const featsCount = (block.feats || []).length || 0;
-  if (featsCount < expectedFeats) {
-    messages.push({
-      severity: 'warning',
-      category: 'basics',
-      message: `Creature has ${totalHD} HD and should have at least ${expectedFeats} feats, but only lists ${featsCount}.`,
-    });
-  }
-
-  // --- 4. XP vs CR (The "Rules Lawyer" Check) ---
-  const crKey = String(block.cr);
-  const expectedXP = XP_Table[crKey];
+  // C. Validate Feat Count
+  const expectedFeats = Math.ceil(totalHD / 2); 
+  const actualFeats = block.feats?.length || 0;
   
-  if (block.xp !== undefined && expectedXP !== undefined) {
-    if (block.xp !== expectedXP) {
-      messages.push({ 
-        severity: 'warning', 
-        category: 'basics', 
-        message: `XP ${block.xp} does not match canonical value ${expectedXP} for CR ${crKey}. (Source: Core Rulebook Experience Point Awards table)` 
+  if (actualFeats < expectedFeats) {
+      messages.push({
+          category: 'basics',
+          severity: 'warning',
+          message: `Creature has ${totalHD} HD and should have at least ${expectedFeats} feats, but only lists ${actualFeats}.`,
+          expected: expectedFeats,
+          actual: actualFeats
       });
-    }
   }
 
-  const hasError = messages.some((m) => m.severity === 'error');
-  const hasWarning = messages.some((m) => m.severity === 'warning');
+  // --- 3. XP & CR VALIDATION ---
+  const expectedXP = XP_Table[block.cr as string]; 
+  if (expectedXP && block.xp !== expectedXP) {
+      messages.push({
+          category: 'basics',
+          severity: 'warning',
+          message: `XP ${block.xp} does not match canonical value ${expectedXP} for CR ${block.cr}. (Source: Core Rulebook Experience Point Awards table)`,
+          expected: expectedXP,
+          actual: block.xp
+        }); 
+  }
 
   return {
-    valid: !hasError,
-    messages,
-    status: hasError ? 'FAIL' : hasWarning ? 'WARN' : 'PASS',
-  } as any;
+    valid: messages.length === 0,
+    status: messages.some(m => m.severity === 'error') ? 'FAIL' : (messages.length > 0 ? 'WARN' : 'PASS'),
+    messages: messages,
+  };
 }
 
 export default validateBasics;
