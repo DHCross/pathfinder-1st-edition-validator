@@ -164,7 +164,7 @@ export const ValidatorPlayground: React.FC = () => {
       {/* COLUMN 2: AUDIT & LOGS */}
       <div className="validator-scroll-area">
         <div>
-            <h3 className="validator-header">2. Rules Lawyer Audit (v2.1)</h3>
+            <h3 className="validator-header">2. Rules Lawyer Audit (v3.0)</h3>
             {/* Clarify which block is being validated to avoid confusion */}
             <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.5rem' }}>
                 Validating: {fixMode === 'enforce_cr' ? 'Auto-Fixed Version (Design Mode)' : 'Raw Input (Audit Mode)'}
