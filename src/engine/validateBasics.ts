@@ -101,9 +101,10 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
   // --- 3. XP & CR VALIDATION ---
   const expectedXP = XP_Table[block.cr as string]; 
   if (expectedXP && block.xp !== expectedXP) {
+      isCritical = true;
       messages.push({
           category: 'basics',
-          severity: 'warning',
+          severity: 'critical',
           message: `XP ${block.xp} does not match canonical value ${expectedXP} for CR ${block.cr}. (Source: Core Rulebook Experience Point Awards table)`,
           expected: expectedXP,
           actual: block.xp
