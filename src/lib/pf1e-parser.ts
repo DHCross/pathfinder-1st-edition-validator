@@ -1,10 +1,10 @@
+// src/lib/pf1e-parser.ts
 
 import { PF1eStatBlock } from '../types/PF1eStatBlock';
 import { CreatureSize, CreatureType, ChallengeRatingValue, PfClassName } from '../rules/pf1e-data-tables';
 
 /**
  * Cleans artifacts but preserves structural newlines for block parsing.
- * Inspired by the robust sanitization in your other project.
  */
 function cleanText(text: string): string {
   return text
@@ -37,21 +37,20 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   };
 
   // --- 1. SECTION EXTRACTION (Preserving the Soul) ---
-  // We capture the full text lines for these sections so we can print them back out later.
   
-  const speedMatch = fullText.match(/Speed\s+(.+?)(?=\n|Melee|Ranged|Space|Special|Str|Statistic)/i);
-  if (speedMatch) block.speed_line = "Speed " + speedMatch[1].trim();
-
   const meleeMatch = fullText.match(/Melee\s+(.+?)(?=\n|Ranged|Space|Special|Str|Statistic)/i);
   if (meleeMatch) block.melee_line = "Melee " + meleeMatch[1].trim();
 
   const rangedMatch = fullText.match(/Ranged\s+(.+?)(?=\n|Space|Special|Str|Statistic)/i);
   if (rangedMatch) block.ranged_line = "Ranged " + rangedMatch[1].trim();
 
+  const speedMatch = fullText.match(/Speed\s+(.+?)(?=\n|Melee|Ranged|Space|Special|Str|Statistic)/i);
+  if (speedMatch) block.speed_line = "Speed " + speedMatch[1].trim();
+
   const specialAttacksMatch = fullText.match(/Special Attacks\s+(.+?)(?=\n|Str|Statistic|Spells)/i);
   if (specialAttacksMatch) block.special_attacks_line = "Special Attacks " + specialAttacksMatch[1].trim();
 
-  // Capture the entire Spell Block (from "Spells" down to "STATISTICS")
+  // Capture the entire Spell Block
   const spellsMatch = fullText.match(/(?:Spells|Spell-Like).+?(?=STATISTICS|Str\s+\d)/s);
   if (spellsMatch) block.spells_block = spellsMatch[0].trim();
 
@@ -68,28 +67,23 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   if (gearMatch) block.equipment_line = "Equipment " + gearMatch[1].trim();
 
 
-  // --- 2. CORE STAT PARSING ---
+  // --- 2. CORE STAT PARSING (The Math) ---
   
-  // --- 2b. INITIATIVE & SENSES ---
-  const initMatch = fullText.match(/Init\s*([+-]?\d+)/i);
-  if (initMatch) block.init_claimed = parseInt(initMatch[1]);
-
-  const perceptionMatch = fullText.match(/Perception\s*([+-]?\d+)/i);
-  if (perceptionMatch) block.perception_claimed = parseInt(perceptionMatch[1]);
-
+  // CR & XP
   const crMatch = fullText.match(/(?:CR|Challenge Rating)\s*(\d+(?:[\/\.]\d+)?)/i);
   if (crMatch) block.cr = crMatch[1] as ChallengeRatingValue;
   
   const xpMatch = fullText.match(/XP\s*([0-9,]+)/i);
   if (xpMatch) block.xp = parseInt(xpMatch[1].replace(/,/g, ''));
 
-  // Type & Class
+  // Type & Class Detection
   const typeMatch = fullText.match(/(LG|NG|CG|LN|N|CN|LE|NE|CE)\s+(Fine|Diminutive|Tiny|Small|Medium|Large|Huge|Gargantuan|Colossal)\s+([a-zA-Z\-\s\(\)]+)/i);
   if (typeMatch) {
     block.alignment = typeMatch[1];
     block.size = typeMatch[2] as CreatureSize;
     const rawType = typeMatch[3].trim();
     
+    // Map narrative types to mechanical types
     if (/Fiend|Devil|Demon|Daemon|Angel|Archon|Azata|Chaos-Beast/i.test(rawType)) block.type = 'Outsider';
     else if (/Dragon/i.test(rawType)) block.type = 'Dragon';
     else if (/Undead/i.test(rawType)) block.type = 'Undead';
@@ -97,6 +91,7 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
     else block.type = rawType.split(' ')[0] as CreatureType;
   }
 
+  // Detect Class Levels
   const classRegex = /(Barbarian|Bard|Cleric|Druid|Fighter|Monk|Paladin|Ranger|Rogue|Sorcerer|Wizard|Adept|Aristocrat|Commoner|Expert|Warrior)\s+(\d+)/gi;
   let clsMatch;
   while ((clsMatch = classRegex.exec(fullText)) !== null) {
@@ -106,18 +101,14 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
       });
   }
 
-  // --- FIX: Improved AC/Touch/Flat-Footed Detection ---
-  // Looks for "touch 14" or "flat-footed 12" even if punctuation varies
+  // Stats
   const acMatch = fullText.match(/AC\s*(\d+)/i);
   if (acMatch) block.ac_claimed = parseInt(acMatch[1]);
-
   const touchMatch = fullText.match(/touch\s*(\d+)/i);
   if (touchMatch) block.touch_ac_claimed = parseInt(touchMatch[1]);
-
-  const ffMatch = fullText.match(/flat-?footed\s*(\d+)/i); // Handle flatfooted vs flat-footed
+  const ffMatch = fullText.match(/flat-?footed\s*(\d+)/i);
   if (ffMatch) block.flat_footed_ac_claimed = parseInt(ffMatch[1]);
 
-  // HP
   const hpMatch = fullText.match(/(?:hp|HP)\s*(\d+)\s*(?:\(([^)]+)\))?/);
   if (hpMatch) {
       block.hp_claimed = parseInt(hpMatch[1]);
@@ -127,10 +118,11 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
           if (hdCount) block.racialHD = parseInt(hdCount[1]);
       }
   }
+  
+  // Logic Fix: If Racial HD == Class Levels, assume 0 Racial HD (Pure NPC)
   const totalLevels = block.classLevels?.reduce((s,c) => s + c.level, 0) || 0;
   if (block.racialHD === totalLevels && totalLevels > 0) block.racialHD = 0;
 
-  // Saves
   const saveMatch = fullText.match(/Fort\s*\+?(-?\d+),\s*Ref\s*\+?(-?\d+),\s*Will\s*\+?(-?\d+)/i);
   if (saveMatch) {
       block.fort_save_claimed = parseInt(saveMatch[1]);
@@ -138,9 +130,9 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
       block.will_save_claimed = parseInt(saveMatch[3]);
   }
 
-  // BAB/CMD
   const babMatch = fullText.match(/(?:Base Atk|Base Atk\.|Base Attack)\s*\+?(\d+)/i);
   if (babMatch) block.bab_claimed = parseInt(babMatch[1]);
+  
   const cmdMatch = fullText.match(/CMD\s*(\d+)/i);
   if (cmdMatch) block.cmd_claimed = parseInt(cmdMatch[1]);
 
@@ -160,17 +152,19 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   if (chaMatch) block.cha = parseInt(chaMatch[1]);
 
   if (block.ac_claimed) block.ac = block.ac_claimed;
+  if (block.touch_ac_claimed) block.touch = block.touch_ac_claimed;
+  if (block.flat_footed_ac_claimed) block.flatFooted = block.flat_footed_ac_claimed;
 
-  // --- FIX: Improved Feat Detection ---
-  // Matches "Feats Alertness..." (no colon) and stops at "Skills"
+  // Senses
+  const initMatch = fullText.match(/Init\s*([+-]?\d+)/i);
+  if (initMatch) block.init_claimed = parseInt(initMatch[1]);
+  const perceptionMatch = fullText.match(/Perception\s*([+-]?\d+)/i);
+  if (perceptionMatch) block.perception_claimed = parseInt(perceptionMatch[1]);
+
+  // Feats
   const featsMatch = fullText.match(/Feats[:\s]+(.+?)(?=\n|Skills|Languages|SQ|Ecology|Special Abilities)/i);
-  if (featsMatch) {
-    // Split by comma, handle potential lack of commas if just space separated? 
-    // Standard is comma, but let's support both
-    block.feats = featsMatch[1].split(/[,;]/).map(f => f.trim()).filter(Boolean);
-  }
+  if (featsMatch) block.feats = featsMatch[1].split(/[,;]/).map(f => f.trim()).filter(Boolean);
 
-  // Treasure
   const treasureMatch = fullText.match(/Treasure\s+(.+?)(?:$|\n)/i);
   if (treasureMatch) {
       const tText = treasureMatch[1].toLowerCase();

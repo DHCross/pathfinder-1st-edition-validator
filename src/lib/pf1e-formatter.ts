@@ -1,3 +1,5 @@
+// src/lib/pf1e-formatter.ts
+
 import { PF1eStatBlock } from '../types/PF1eStatBlock';
 import { ClassStatistics, CreatureTypeRules } from '../rules/pf1e-data-tables';
 
@@ -30,14 +32,7 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   const classString = block.classLevels?.map(c => `${c.className} ${c.level}`).join(', ') || '';
   const typeLine = classString ? `${alignment} ${size} ${type} ${classString}` : `${alignment} ${size} ${type}`;
 
-  // Calculate Init (Use claimed if available, otherwise Dex mod)
-  const initVal = block.init_claimed !== undefined ? (block.init_claimed >= 0 ? `+${block.init_claimed}` : `${block.init_claimed}`) : fmtMod(block.dex);
-  
-  // Calculate Perception (Use claimed if available, otherwise +0)
-  const percVal = block.perception_claimed !== undefined ? (block.perception_claimed >= 0 ? `+${block.perception_claimed}` : `${block.perception_claimed}`) : '+0';
-
   // --- RESTORE PRESERVED SECTIONS ---
-  const speedOutput = block.speed_line || 'Speed 30 ft.';
   const meleeOutput = block.melee_line || `Melee weapon +${block.bab_claimed || 0} (1d8)`;
   const rangedOutput = block.ranged_line ? `${block.ranged_line}\n` : '';
   const specialAttacks = block.special_attacks_line ? `${block.special_attacks_line}\n` : '';
@@ -46,6 +41,14 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   const languagesOutput = block.languages_line ? `${block.languages_line}\n` : '';
   const gearOutput = block.equipment_line ? `${block.equipment_line}\n` : '';
   const specialAbilitiesOutput = block.special_abilities_block ? `\n${block.special_abilities_block}` : '';
+  const speedOutput = block.speed_line || 'Speed 30 ft.';
+
+  // Calculate Init (Use claimed if available, otherwise Dex mod)
+  const initVal = block.init_claimed !== undefined ? (block.init_claimed >= 0 ? `+${block.init_claimed}` : `${block.init_claimed}`) : fmtMod(block.dex);
+  
+  // Calculate Perception (Use claimed if available, otherwise +0)
+  const percVal = block.perception_claimed !== undefined ? (block.perception_claimed >= 0 ? `+${block.perception_claimed}` : `${block.perception_claimed}`) : '+0';
+
 
   return `
 ${name}

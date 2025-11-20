@@ -1,3 +1,5 @@
+// src/engine/autoFixer.ts
+
 import { PF1eStatBlock } from '../types/PF1eStatBlock';
 import { ClassStatistics, SizeConstants, XP_Table, CreatureTypeRules } from '../rules/pf1e-data-tables';
 

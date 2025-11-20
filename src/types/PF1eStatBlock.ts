@@ -50,17 +50,6 @@ export interface PF1eStatBlock {
   // Feats
   feats?: string[];
 
-  // NEW: Preservation Fields (The "Soul" of the monster)
-  speed_line?: string;
-  melee_line?: string;          
-  ranged_line?: string;         
-  special_attacks_line?: string;
-  spells_block?: string;        
-  skills_line?: string;         
-  languages_line?: string;      
-  equipment_line?: string;      
-  special_abilities_block?: string; 
-
   // Economy & Gear
   economicTier?: EconomicTier;
   treasureType?: 'None' | 'Incidental' | 'Standard' | 'Double' | 'Triple' | 'NPC Gear';
@@ -69,10 +58,6 @@ export interface PF1eStatBlock {
   // Claim fields for validation results
   claimedLevel?: number;
   claimedEffectiveLevel?: number;
-
-  // NEW: Claimed Senses
-  init_claimed?: number;
-  perception_claimed?: number;
 
   // NEW: Claimed stats for benchmarking
   ac_claimed?: number;
@@ -84,6 +69,19 @@ export interface PF1eStatBlock {
   fort_save_claimed?: number;
   ref_save_claimed?: number;
   will_save_claimed?: number;
+  init_claimed?: number;
+  perception_claimed?: number;
+
+  // NEW: Preservation Fields (The "Soul" of the monster)
+  melee_line?: string;
+  ranged_line?: string;
+  special_attacks_line?: string;
+  spells_block?: string;
+  skills_line?: string;
+  languages_line?: string;
+  equipment_line?: string;
+  special_abilities_block?: string;
+  speed_line?: string;
 }
 
 export interface ValidationMessage {
