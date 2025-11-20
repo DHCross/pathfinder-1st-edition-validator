@@ -69,6 +69,10 @@ export interface PF1eStatBlock {
   claimedLevel?: number;
   claimedEffectiveLevel?: number;
 
+  // NEW: Claimed Senses
+  init_claimed?: number;
+  perception_claimed?: number;
+
   // NEW: Claimed stats for benchmarking
   ac_claimed?: number;
   touch_ac_claimed?: number;

@@ -67,6 +67,13 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
 
   // --- 2. CORE STAT PARSING ---
   
+  // --- 2b. INITIATIVE & SENSES ---
+  const initMatch = fullText.match(/Init\s*([+-]?\d+)/i);
+  if (initMatch) block.init_claimed = parseInt(initMatch[1]);
+
+  const perceptionMatch = fullText.match(/Perception\s*([+-]?\d+)/i);
+  if (perceptionMatch) block.perception_claimed = parseInt(perceptionMatch[1]);
+
   const crMatch = fullText.match(/(?:CR|Challenge Rating)\s*(\d+(?:[\/\.]\d+)?)/i);
   if (crMatch) block.cr = crMatch[1] as ChallengeRatingValue;
   
