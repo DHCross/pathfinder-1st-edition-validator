@@ -7,37 +7,51 @@ interface ValidatorDisplayProps {
 }
 
 export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, validation }) => {
-  const statusColors: Record<string, string> = {
-    PASS: 'bg-green-100 text-green-800 border-green-200',
-    FAIL: 'bg-red-100 text-red-800 border-red-200',
-    WARN: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'PASS': return { backgroundColor: '#dcfce7', color: '#166534', borderColor: '#bbf7d0' };
+      case 'FAIL': return { backgroundColor: '#fee2e2', color: '#991b1b', borderColor: '#fecaca' };
+      case 'WARN': return { backgroundColor: '#fef9c3', color: '#854d0e', borderColor: '#fde047' };
+      default: return {};
+    }
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto font-sans border rounded-lg shadow-sm bg-white">
-      <div className="flex justify-between items-start border-b pb-4 mb-4">
+    <div style={{ padding: '1.5rem', maxWidth: '42rem', margin: '0 auto', fontFamily: 'sans-serif', border: '1px solid #e5e7eb', borderRadius: '0.5rem', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', backgroundColor: 'white' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem', marginBottom: '1rem' }}>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{statBlock.name}</h2>
-          <p className="text-sm text-gray-500">
-            {statBlock.size} {statBlock.creature_type} • CR {statBlock.cr_text || statBlock.cr}
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>{statBlock.name}</h2>
+          <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
+            {statBlock.size} {statBlock.type} • CR {statBlock.cr_text || statBlock.cr}
           </p>
         </div>
-        <span className={`px-4 py-1 rounded-full text-sm font-bold border ${statusColors[validation.status]}`}>
+        <span style={{ padding: '0.25rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 'bold', border: '1px solid', ...getStatusStyle(validation.status || 'PASS') }}>
           {validation.status}
         </span>
       </div>
 
-      <div className="space-y-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {validation.messages.length === 0 ? (
-          <p className="text-gray-500 italic">No validation errors found.</p>
+          <p style={{ color: '#6b7280', fontStyle: 'italic' }}>No validation errors found.</p>
         ) : (
           validation.messages.map((msg, idx) => (
-            <div key={idx} className={`p-3 rounded border-l-4 ${msg.severity === 'error' ? 'bg-red-50 border-red-500' : 'bg-yellow-50 border-yellow-500'}`}>
-              <div className="flex justify-between">
-                <span className="font-mono text-xs uppercase tracking-wider opacity-75">{msg.rule_id}</span>
-                <span className="text-xs text-gray-500">{msg.reference_doc}</span>
+            <div key={idx} style={{ 
+                padding: '0.75rem', 
+                borderRadius: '0.25rem', 
+                borderLeftWidth: '4px', 
+                borderLeftStyle: 'solid',
+                backgroundColor: msg.severity === 'error' ? '#fef2f2' : '#fefce8',
+                borderLeftColor: msg.severity === 'error' ? '#ef4444' : '#eab308'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.75 }}>{msg.category}</span>
               </div>
-              <p className="mt-1 font-medium text-gray-800">{msg.text}</p>
+              <p style={{ marginTop: '0.25rem', fontWeight: 500, color: '#1f2937' }}>{msg.message}</p>
+              {msg.expected !== undefined && (
+                  <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#6b7280' }}>
+                    Expected: {JSON.stringify(msg.expected)} | Actual: {JSON.stringify(msg.actual)}
+                  </div>
+              )}
             </div>
           ))
         )}

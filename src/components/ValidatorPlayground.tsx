@@ -71,12 +71,12 @@ export const ValidatorPlayground: React.FC = () => {
   }, [rawInput, fixMode]);
 
   return (
-    <div className="grid grid-cols-3 gap-4 p-4 h-screen bg-gray-50 font-sans">
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', padding: '1rem', height: '100vh', backgroundColor: '#f9fafb', fontFamily: 'sans-serif', boxSizing: 'border-box' }}>
       {/* COLUMN 1: RAW INPUT */}
-      <div className="flex flex-col gap-2 h-full">
-        <h2 className="font-bold text-lg text-gray-700">1. Raw Stat Block</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', height: '100%' }}>
+        <h2 style={{ fontWeight: 'bold', fontSize: '1.125rem', color: '#374151', margin: 0 }}>1. Raw Stat Block</h2>
         <textarea
-          className="flex-1 p-3 font-mono text-sm border border-gray-300 rounded shadow-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          style={{ flex: 1, padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', resize: 'none', outline: 'none' }}
           value={rawInput}
           onChange={(e) => setRawInput(e.target.value)}
           spellCheck={false}
@@ -85,9 +85,9 @@ export const ValidatorPlayground: React.FC = () => {
       </div>
 
       {/* COLUMN 2: AUDIT & LOGS */}
-      <div className="overflow-y-auto flex flex-col gap-4">
+      <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div>
-            <h3 className="font-bold text-lg mb-2 text-gray-700">2. Rules Lawyer Audit</h3>
+            <h3 style={{ fontWeight: 'bold', fontSize: '1.125rem', marginBottom: '0.5rem', color: '#374151', margin: 0 }}>2. Rules Lawyer Audit</h3>
             {parsedBlock && validationResult ? (
             <ValidatorDisplay statBlock={parsedBlock} validation={validationResult} />
             ) : null}
@@ -95,20 +95,20 @@ export const ValidatorPlayground: React.FC = () => {
 
         {/* NEW: FIX REPORT */}
         {fixLogs.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-bold text-blue-800 mb-2 text-sm flex items-center gap-2">
+            <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.5rem', padding: '1rem' }}>
+                <h4 style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '0.5rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                     🛠️ Auto-Fixes Applied ({fixMode === 'fix_math' ? 'Audit Mode' : 'Design Mode'})
                 </h4>
-                <ul className="space-y-2">
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {fixLogs.map((fix, i) => (
-                        <li key={i} className="text-xs text-blue-900">
-                            <div className="font-semibold">{fix.feature}</div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className="line-through opacity-60">{fix.oldValue}</span>
+                        <li key={i} style={{ fontSize: '0.75rem', color: '#1e3a8a' }}>
+                            <div style={{ fontWeight: 600 }}>{fix.feature}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.125rem' }}>
+                                <span style={{ textDecoration: 'line-through', opacity: 0.6 }}>{fix.oldValue}</span>
                                 <span>→</span>
-                                <span className="font-bold bg-white px-1 rounded border border-blue-100">{fix.newValue}</span>
+                                <span style={{ fontWeight: 'bold', backgroundColor: 'white', padding: '0 0.25rem', borderRadius: '0.25rem', border: '1px solid #dbeafe' }}>{fix.newValue}</span>
                             </div>
-                            <div className="text-blue-500 italic mt-0.5">{fix.reason}</div>
+                            <div style={{ color: '#3b82f6', fontStyle: 'italic', marginTop: '0.125rem' }}>{fix.reason}</div>
                         </li>
                     ))}
                 </ul>
@@ -117,30 +117,44 @@ export const ValidatorPlayground: React.FC = () => {
       </div>
 
       {/* COLUMN 3: FIX OUTPUT (With Toggle) */}
-      <div className="flex flex-col h-full">
-         <div className="flex justify-between items-center mb-2">
-            <h2 className="font-bold text-lg text-gray-700">3. Auto-Fixed Version</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <h2 style={{ fontWeight: 'bold', fontSize: '1.125rem', color: '#374151', margin: 0 }}>3. Auto-Fixed Version</h2>
             
             {/* MODE TOGGLE */}
-            <div className="flex bg-gray-200 rounded p-1">
+            <div style={{ display: 'flex', backgroundColor: '#e5e7eb', borderRadius: '0.25rem', padding: '0.25rem' }}>
                 <button
                     onClick={() => setFixMode('fix_math')}
-                    className={`px-3 py-1 text-xs rounded transition-all ${
-                        fixMode === 'fix_math' 
-                        ? 'bg-white text-blue-700 font-bold shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-800'
-                    }`}
+                    style={{
+                        padding: '0.25rem 0.75rem',
+                        fontSize: '0.75rem',
+                        borderRadius: '0.25rem',
+                        transition: 'all 0.2s',
+                        border: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: fixMode === 'fix_math' ? 'white' : 'transparent',
+                        color: fixMode === 'fix_math' ? '#1d4ed8' : '#4b5563',
+                        fontWeight: fixMode === 'fix_math' ? 'bold' : 'normal',
+                        boxShadow: fixMode === 'fix_math' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none'
+                    }}
                     title="Trust Stats, Update CR"
                 >
                     Fix Math
                 </button>
                 <button
                     onClick={() => setFixMode('enforce_cr')}
-                    className={`px-3 py-1 text-xs rounded transition-all ${
-                        fixMode === 'enforce_cr' 
-                        ? 'bg-white text-blue-700 font-bold shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-800'
-                    }`}
+                    style={{
+                        padding: '0.25rem 0.75rem',
+                        fontSize: '0.75rem',
+                        borderRadius: '0.25rem',
+                        transition: 'all 0.2s',
+                        border: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: fixMode === 'enforce_cr' ? 'white' : 'transparent',
+                        color: fixMode === 'enforce_cr' ? '#1d4ed8' : '#4b5563',
+                        fontWeight: fixMode === 'enforce_cr' ? 'bold' : 'normal',
+                        boxShadow: fixMode === 'enforce_cr' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none'
+                    }}
                     title="Trust CR, Downgrade Stats"
                 >
                     Enforce CR
@@ -148,19 +162,35 @@ export const ValidatorPlayground: React.FC = () => {
             </div>
          </div>
          
-         <div className="flex-1 bg-white border rounded shadow-sm p-4 overflow-y-auto mt-2">
+         <div style={{ flex: 1, backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '0.25rem', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', padding: '1rem', overflowY: 'auto', marginTop: '0.5rem' }}>
             {fixedBlock ? (
-                <pre className="text-xs font-mono whitespace-pre-wrap text-gray-800">
+                <pre style={{ fontSize: '0.75rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap', color: '#1f2937', margin: 0 }}>
                     {formatPF1eStatBlock(fixedBlock)}
                 </pre>
             ) : (
-                <p className="text-gray-400 text-sm italic">Fixes will appear here.</p>
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem', fontStyle: 'italic' }}>Fixes will appear here.</p>
             )}
         </div>
         
         <button 
             onClick={() => fixedBlock && navigator.clipboard.writeText(formatPF1eStatBlock(fixedBlock))}
-            className="mt-2 w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow-sm transition-colors flex items-center justify-center gap-2"
+            style={{
+                marginTop: '0.5rem',
+                width: '100%',
+                padding: '0.5rem',
+                backgroundColor: '#16a34a',
+                color: 'white',
+                fontWeight: 'bold',
+                borderRadius: '0.25rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                border: 'none',
+                cursor: 'pointer'
+            }}
         >
             📋 Copy to Clipboard
         </button>
