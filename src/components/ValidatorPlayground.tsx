@@ -113,11 +113,12 @@ export const ValidatorPlayground: React.FC = () => {
       setFixLogs([...currentLogs, ...fixes]);
 
       // C. VALIDATE
-      // We validate the PARSED block (Raw Input) to show errors in the original.
-      // Previously we validated 'fixed', which hid errors.
-      const vBasics = validateBasics(parsedBlock);
-      const vBench = validateBenchmarks(parsedBlock);
-      const vEcon = validateEconomy(parsedBlock);
+      // We validate the FIXED block to show the "Happy Path" by default.
+      // If the user wants to see errors, they can look at the logs or we can add a toggle later.
+      // The user requested: "Validation Panel immediately shows a PASS (because it's auditing the fixed version)."
+      const vBasics = validateBasics(fixed);
+      const vBench = validateBenchmarks(fixed);
+      const vEcon = validateEconomy(fixed);
 
       const combined: ValidationResult = {
         valid: vBasics.valid && vBench.valid && vEcon.valid,
@@ -199,20 +200,42 @@ export const ValidatorPlayground: React.FC = () => {
                     />
                 </div>
 
-                <button
-                    onClick={() => setFixMode('enforce_cr')}
-                    className={`mode-btn ${fixMode === 'enforce_cr' ? 'active' : 'inactive'}`}
-                    title="Trust CR, Downgrade Stats"
-                >
-                    Enforce CR
-                </button>
-                <button
-                    onClick={() => setFixMode('fix_math')}
-                    className={`mode-btn ${fixMode === 'fix_math' ? 'active' : 'inactive'}`}
-                    title="Trust Stats, Update CR"
-                >
-                    Fix Math
-                </button>
+                <div style={{ display: 'flex', backgroundColor: '#e5e7eb', borderRadius: '0.25rem', padding: '0.25rem' }}>
+                    <button
+                        onClick={() => setFixMode('enforce_cr')}
+                        style={{
+                            backgroundColor: fixMode === 'enforce_cr' ? 'white' : 'transparent',
+                            color: fixMode === 'enforce_cr' ? '#1d4ed8' : '#4b5563',
+                            fontWeight: fixMode === 'enforce_cr' ? 'bold' : 'normal',
+                            boxShadow: fixMode === 'enforce_cr' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
+                            padding: '0.25rem 0.75rem',
+                            fontSize: '0.75rem',
+                            borderRadius: '0.25rem',
+                            border: 'none',
+                            cursor: 'pointer'
+                        }}
+                        title="Keep CR, Downgrade Stats"
+                    >
+                        Design Mode (Enforce CR)
+                    </button>
+                    <button
+                        onClick={() => setFixMode('fix_math')}
+                        style={{
+                            backgroundColor: fixMode === 'fix_math' ? 'white' : 'transparent',
+                            color: fixMode === 'fix_math' ? '#1d4ed8' : '#4b5563',
+                            fontWeight: fixMode === 'fix_math' ? 'bold' : 'normal',
+                            boxShadow: fixMode === 'fix_math' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
+                            padding: '0.25rem 0.75rem',
+                            fontSize: '0.75rem',
+                            borderRadius: '0.25rem',
+                            border: 'none',
+                            cursor: 'pointer'
+                        }}
+                        title="Keep Stats, Update CR"
+                    >
+                        Audit Mode (Fix Math)
+                    </button>
+                </div>
             </div>
          </div>
          
