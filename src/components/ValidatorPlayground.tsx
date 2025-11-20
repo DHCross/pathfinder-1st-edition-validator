@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { parsePF1eStatBlock } from '../lib/pf1e-parser';
 import { formatPF1eStatBlock } from '../lib/pf1e-formatter';
-import { autoFixStatBlock, FixLogEntry, FixMode } from '../engine/autoFixer';
+import { autoFixStatBlock, FixMode, FixLogEntry } from '../engine/autoFixer';
 import { validateBasics } from '../engine/validateBasics';
 import { validateBenchmarks } from '../engine/validateBenchmarks';
-import { ValidationResult } from '../types/PF1eStatBlock';
+import { validateEconomy } from '../engine/validateEconomy';
+import { ValidatorDisplay } from './ValidatorDisplay';
+import { PF1eStatBlock, ValidationResult } from '../types/PF1eStatBlock';
 
 const SAMPLE_TEXT = `Fire Beetle
 CR 1/3
@@ -26,223 +28,142 @@ Treasure None`;
 
 export const ValidatorPlayground: React.FC = () => {
   const [rawInput, setRawInput] = useState(SAMPLE_TEXT);
+  const [parsedBlock, setParsedBlock] = useState<PF1eStatBlock | null>(null);
   const [fixMode, setFixMode] = useState<FixMode>('fix_math');
-  const [fixedBlock, setFixedBlock] = useState(() => autoFixStatBlock(parsePF1eStatBlock(SAMPLE_TEXT), 'fix_math').block);
-  const [fixes, setFixes] = useState<FixLogEntry[]>([]);
-  const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
+  const [fixedBlock, setFixedBlock] = useState<PF1eStatBlock | null>(null);
+  const [fixLogs, setFixLogs] = useState<FixLogEntry[]>([]);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newText = e.currentTarget.value;
-    setRawInput(newText);
-    runValidation(newText, fixMode);
-  };
+  useEffect(() => {
+    if (!rawInput.trim()) {
+        setParsedBlock(null);
+        setFixedBlock(null);
+        setValidationResult(null);
+        setFixLogs([]);
+        return;
+    }
 
-  const handleModeChange = (mode: FixMode) => {
-    setFixMode(mode);
-    runValidation(rawInput, mode);
-  };
-
-  const runValidation = (text: string, mode: FixMode) => {
     try {
-      const parsed = parsePF1eStatBlock(text);
-      
-      const { block: fixed, fixes: newFixes } = autoFixStatBlock(parsed, mode);
+      const parsed = parsePF1eStatBlock(rawInput);
+      setParsedBlock(parsed);
+
+      const vBasics = validateBasics(parsed);
+      const vBench = validateBenchmarks(parsed);
+      const vEcon = validateEconomy(parsed);
+
+      const combined: ValidationResult = {
+        valid: vBasics.valid && vBench.valid && vEcon.valid,
+        status: (vBasics.status === 'FAIL' || vEcon.status === 'FAIL') ? 'FAIL' 
+              : (vBasics.status === 'WARN' || vEcon.status === 'WARN' || vBench.status === 'WARN') ? 'WARN' 
+              : 'PASS',
+        messages: [...vBasics.messages, ...vBench.messages, ...vEcon.messages]
+      };
+      setValidationResult(combined);
+
+      // Execute Fixer
+      const { block: fixed, fixes } = autoFixStatBlock(parsed, fixMode);
       setFixedBlock(fixed);
-      setFixes(newFixes);
-      
-      // Run validators
-      const basicsResult = validateBasics(parsed);
-      const benchmarksResult = validateBenchmarks(parsed);
-      setValidationResults([basicsResult, benchmarksResult]);
-    } catch (error) {
-      console.error('Parse error:', error);
-    }
-  };
+      setFixLogs(fixes);
 
-  const getStatusColor = (severity: 'error' | 'warning' | 'info') => {
-    switch (severity) {
-      case 'error': return '#dc2626';
-      case 'warning': return '#ea580c';
-      case 'info': return '#2563eb';
+    } catch (e) {
+      console.error(e);
     }
-  };
-
-  const getFixActionColor = (action?: 'changed' | 'preserved' | 'warning') => {
-    switch (action) {
-      case 'changed': return '#065f46'; // green
-      case 'preserved': return '#b45309'; // amber
-      case 'warning': return '#991b1b'; // red
-      default: return '#047857';
-    }
-  };
+  }, [rawInput, fixMode]);
 
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '1rem',
-      padding: '1rem',
-      fontFamily: 'system-ui, sans-serif',
-      height: '100vh',
-      boxSizing: 'border-box'
-    }}>
-      {/* Column 1: Raw Input */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
-          📝 Raw Stat Block
-        </h2>
+    <div className="grid grid-cols-3 gap-4 p-4 h-screen bg-gray-50 font-sans">
+      {/* COLUMN 1: RAW INPUT */}
+      <div className="flex flex-col gap-2 h-full">
+        <h2 className="font-bold text-lg text-gray-700">1. Raw Stat Block</h2>
         <textarea
+          className="flex-1 p-3 font-mono text-sm border border-gray-300 rounded shadow-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           value={rawInput}
-          onChange={handleInputChange}
-          style={{
-            flex: 1,
-            padding: '0.75rem',
-            fontFamily: 'monospace',
-            fontSize: '0.875rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '0.375rem',
-            resize: 'none',
-            lineHeight: 1.5
-          }}
+          onChange={(e) => setRawInput(e.target.value)}
           spellCheck={false}
+          placeholder="Paste stat block here..."
         />
       </div>
 
-      {/* Column 2: Validation Results */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflow: 'auto' }}>
-        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
-          ⚖️ Validation & Fixes
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {validationResults.map((result, idx) => (
-            <div key={idx} style={{
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              padding: '0.75rem',
-              backgroundColor: '#f9fafb'
-            }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
-                {result.messages[0]?.category || 'Validation'}
-              </div>
-              {result.messages.length === 0 ? (
-                <div style={{ color: '#059669', fontWeight: 500 }}>✓ PASS</div>
-              ) : (
-                <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
-                  {result.messages.map((msg, msgIdx) => (
-                    <li key={msgIdx} style={{ 
-                      color: getStatusColor(msg.severity),
-                      marginBottom: '0.25rem',
-                      fontSize: '0.875rem'
-                    }}>
-                      <strong>{msg.severity.toUpperCase()}:</strong> {msg.message}
-                      {msg.expected !== undefined && (
-                        <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#6b7280' }}>
-                          Expected: {JSON.stringify(msg.expected)} | Actual: {JSON.stringify(msg.actual)}
-                        </div>
-                      )}
-                    </li>
-                  ))}
+      {/* COLUMN 2: AUDIT & LOGS */}
+      <div className="overflow-y-auto flex flex-col gap-4">
+        <div>
+            <h3 className="font-bold text-lg mb-2 text-gray-700">2. Rules Lawyer Audit</h3>
+            {parsedBlock && validationResult ? (
+            <ValidatorDisplay statBlock={parsedBlock} validation={validationResult} />
+            ) : null}
+        </div>
+
+        {/* NEW: FIX REPORT */}
+        {fixLogs.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-bold text-blue-800 mb-2 text-sm flex items-center gap-2">
+                    🛠️ Auto-Fixes Applied ({fixMode === 'fix_math' ? 'Audit Mode' : 'Design Mode'})
+                </h4>
+                <ul className="space-y-2">
+                    {fixLogs.map((fix, i) => (
+                        <li key={i} className="text-xs text-blue-900">
+                            <div className="font-semibold">{fix.feature}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="line-through opacity-60">{fix.oldValue}</span>
+                                <span>→</span>
+                                <span className="font-bold bg-white px-1 rounded border border-blue-100">{fix.newValue}</span>
+                            </div>
+                            <div className="text-blue-500 italic mt-0.5">{fix.reason}</div>
+                        </li>
+                    ))}
                 </ul>
-              )}
             </div>
-          ))}
-
-          {/* Auto-Fixes Section */}
-          {fixes.length > 0 && (
-            <div style={{
-              border: '1px solid #10b981',
-              borderRadius: '0.375rem',
-              padding: '0.75rem',
-              backgroundColor: '#f0fdf4'
-            }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#059669' }}>
-                🛠️ Auto-Fixes Applied
-              </div>
-              <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
-                {fixes.map((fix, idx) => (
-                  <li key={idx} style={{ 
-                    color: getFixActionColor(fix.action),
-                    marginBottom: '0.5rem',
-                    fontSize: '0.875rem'
-                  }}>
-                    <strong>{fix.feature}:</strong> {fix.oldValue} → <strong>{fix.newValue}</strong>
-                    <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', opacity: 0.85 }}>
-                      {fix.action === 'changed' && '✅ Changed'}
-                      {fix.action === 'preserved' && '🛡️ Preserved'}
-                      {fix.action === 'warning' && '⚠️ Warning'}
-                    </span>
-                    <div style={{ fontSize: '0.75rem', marginTop: '0.1rem', color: '#065f46' }}>
-                      {fix.reason}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Column 3: Fixed Output */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
-            ✨ Auto-Fixed Version
-          </h2>
-          
-          {/* Mode Toggle */}
-          <div style={{ display: 'flex', backgroundColor: '#e5e7eb', borderRadius: '0.25rem', padding: '0.25rem' }}>
-            <button
-              onClick={() => handleModeChange('fix_math')}
-              style={{
-                padding: '0.25rem 0.75rem',
-                fontSize: '0.75rem',
-                borderRadius: '0.25rem',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: fixMode === 'fix_math' ? 700 : 400,
-                backgroundColor: fixMode === 'fix_math' ? 'white' : 'transparent',
-                color: fixMode === 'fix_math' ? '#1d4ed8' : '#4b5563',
-                boxShadow: fixMode === 'fix_math' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
-              }}
-              title="Trust Stats, Update CR"
-            >
-              Fix Math
-            </button>
-            <button
-              onClick={() => handleModeChange('enforce_cr')}
-              style={{
-                padding: '0.25rem 0.75rem',
-                fontSize: '0.75rem',
-                borderRadius: '0.25rem',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: fixMode === 'enforce_cr' ? 700 : 400,
-                backgroundColor: fixMode === 'enforce_cr' ? 'white' : 'transparent',
-                color: fixMode === 'enforce_cr' ? '#1d4ed8' : '#4b5563',
-                boxShadow: fixMode === 'enforce_cr' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
-              }}
-              title="Trust CR, Downgrade Stats"
-            >
-              Enforce CR
-            </button>
-          </div>
+      {/* COLUMN 3: FIX OUTPUT (With Toggle) */}
+      <div className="flex flex-col h-full">
+         <div className="flex justify-between items-center mb-2">
+            <h2 className="font-bold text-lg text-gray-700">3. Auto-Fixed Version</h2>
+            
+            {/* MODE TOGGLE */}
+            <div className="flex bg-gray-200 rounded p-1">
+                <button
+                    onClick={() => setFixMode('fix_math')}
+                    className={`px-3 py-1 text-xs rounded transition-all ${
+                        fixMode === 'fix_math' 
+                        ? 'bg-white text-blue-700 font-bold shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                    title="Trust Stats, Update CR"
+                >
+                    Fix Math
+                </button>
+                <button
+                    onClick={() => setFixMode('enforce_cr')}
+                    className={`px-3 py-1 text-xs rounded transition-all ${
+                        fixMode === 'enforce_cr' 
+                        ? 'bg-white text-blue-700 font-bold shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                    title="Trust CR, Downgrade Stats"
+                >
+                    Enforce CR
+                </button>
+            </div>
+         </div>
+         
+         <div className="flex-1 bg-white border rounded shadow-sm p-4 overflow-y-auto mt-2">
+            {fixedBlock ? (
+                <pre className="text-xs font-mono whitespace-pre-wrap text-gray-800">
+                    {formatPF1eStatBlock(fixedBlock)}
+                </pre>
+            ) : (
+                <p className="text-gray-400 text-sm italic">Fixes will appear here.</p>
+            )}
         </div>
-        <textarea
-          value={formatPF1eStatBlock(fixedBlock)}
-          readOnly
-          style={{
-            flex: 1,
-            padding: '0.75rem',
-            fontFamily: 'monospace',
-            fontSize: '0.875rem',
-            border: '1px solid #10b981',
-            borderRadius: '0.375rem',
-            resize: 'none',
-            backgroundColor: '#f0fdf4',
-            lineHeight: 1.5
-          }}
-          spellCheck={false}
-        />
+        
+        <button 
+            onClick={() => fixedBlock && navigator.clipboard.writeText(formatPF1eStatBlock(fixedBlock))}
+            className="mt-2 w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow-sm transition-colors flex items-center justify-center gap-2"
+        >
+            📋 Copy to Clipboard
+        </button>
       </div>
     </div>
   );

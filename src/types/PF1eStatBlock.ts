@@ -13,6 +13,7 @@ export interface PF1eStatBlock {
   // Header
   name: string;
   cr: ChallengeRatingValue;
+  cr_text?: string; // Original text representation of CR if different from normalized value
   xp?: number;
   alignment?: string;
   size: CreatureSize;
