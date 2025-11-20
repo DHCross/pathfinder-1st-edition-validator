@@ -4,30 +4,41 @@ import { ClassStatistics, CreatureTypeRules } from '../rules/pf1e-data-tables';
 export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   const { name, cr, xp, size, type } = block;
   
+  const alignment = block.alignment || 'N';
+  
   const getMod = (score: number) => Math.floor((score - 10) / 2);
   const fmtMod = (score: number) => (getMod(score) >= 0 ? `+${getMod(score)}` : `${getMod(score)}`);
 
-  // Smart HD Formula
+  // Smart HD Formula (Class vs Racial)
   let hpFormula = '';
-  if (block.classLevels && block.classLevels.length > 0) {
-      // Use Class HD (e.g., Sorcerer = d6)
-      const cls = block.classLevels[0];
+  const totalClassLevel = block.classLevels?.reduce((sum, c) => sum + c.level, 0) || 0;
+  
+  if (totalClassLevel > 0 && (block.racialHD || 0) === 0) {
+      const cls = block.classLevels![0];
       const stats = ClassStatistics[cls.className];
       const hdType = stats ? stats.hitDieType : 8;
-      const totalLevel = block.classLevels.reduce((sum, c) => sum + c.level, 0);
+      const totalLevel = block.classLevels!.reduce((sum, c) => sum + c.level, 0);
       hpFormula = `${totalLevel}d${hdType}+${getMod(block.con) * totalLevel}`;
   } else {
-      // Use Racial HD
-      const racialHD = block.racialHD || 1;
-      // Lookup HD type by creature type (e.g. Outsider = d10)
-      const typeRule = CreatureTypeRules[block.type];
-      const hdType = typeRule ? typeRule.hitDieType : 8;
-      hpFormula = `${racialHD}d${hdType}+${getMod(block.con) * racialHD}`;
+      const rHD = block.racialHD || 1;
+      const typeRule = CreatureTypeRules[block.type] || { hitDieType: 8 };
+      const hdType = typeRule.hitDieType;
+      const totalHD = rHD + totalClassLevel;
+      hpFormula = `${totalHD}d${hdType}+${getMod(block.con) * totalHD}`;
   }
 
-  // Format Class String (e.g. "Male Sorcerer 10")
   const classString = block.classLevels?.map(c => `${c.className} ${c.level}`).join(', ') || '';
-  const typeLine = classString ? `${block.alignment || 'N'} ${size} ${type} ${classString}` : `${block.alignment || 'N'} ${size} ${type}`;
+  const typeLine = classString ? `${alignment} ${size} ${type} ${classString}` : `${alignment} ${size} ${type}`;
+
+  // --- RESTORE PRESERVED SECTIONS ---
+  const meleeOutput = block.melee_line || `Melee weapon +${block.bab_claimed || 0} (1d8)`;
+  const rangedOutput = block.ranged_line ? `${block.ranged_line}\n` : '';
+  const specialAttacks = block.special_attacks_line ? `${block.special_attacks_line}\n` : '';
+  const spellsOutput = block.spells_block ? `${block.spells_block}\n` : '';
+  const skillsOutput = block.skills_line ? `${block.skills_line}\n` : '';
+  const languagesOutput = block.languages_line ? `${block.languages_line}\n` : '';
+  const gearOutput = block.equipment_line ? `${block.equipment_line}\n` : '';
+  const specialAbilitiesOutput = block.special_abilities_block ? `\n${block.special_abilities_block}` : '';
 
   return `
 ${name}
@@ -41,11 +52,11 @@ hp ${block.hp_claimed || block.hp} (${hpFormula})
 Fort +${block.fort_save_claimed || 0}, Ref +${block.ref_save_claimed || 0}, Will +${block.will_save_claimed || 0}
 OFFENSE
 Speed 30 ft.
-Melee weapon +${block.bab_claimed || 0} (1d8)
-STATISTICS
+${meleeOutput}
+${rangedOutput}${specialAttacks}${spellsOutput}STATISTICS
 Str ${block.str}, Dex ${block.dex}, Con ${block.con}, Int ${block.int}, Wis ${block.wis}, Cha ${block.cha}
 Base Atk +${block.bab_claimed || 0}; CMB +${(block.bab_claimed || 0) + getMod(block.str)}; CMD ${block.cmd_claimed || 10}
 Feats ${block.feats?.join(', ') || 'None'}
-Treasure ${block.treasureType || 'Standard'}
+${skillsOutput}${languagesOutput}${gearOutput}${specialAbilitiesOutput}
 `.trim();
 }

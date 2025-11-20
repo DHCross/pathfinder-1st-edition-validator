@@ -50,6 +50,16 @@ export interface PF1eStatBlock {
   // Feats
   feats?: string[];
 
+  // NEW: Preservation Fields (The "Soul" of the monster)
+  melee_line?: string;          
+  ranged_line?: string;         
+  special_attacks_line?: string;
+  spells_block?: string;        
+  skills_line?: string;         
+  languages_line?: string;      
+  equipment_line?: string;      
+  special_abilities_block?: string; 
+
   // Economy & Gear
   economicTier?: EconomicTier;
   treasureType?: 'None' | 'Incidental' | 'Standard' | 'Double' | 'Triple' | 'NPC Gear';
