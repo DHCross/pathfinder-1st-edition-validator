@@ -32,7 +32,7 @@ Treasure None`;
 export const ValidatorPlayground: React.FC = () => {
   const [rawInput, setRawInput] = useState(SAMPLE_TEXT);
   const [parsedBlock, setParsedBlock] = useState<PF1eStatBlock | null>(null);
-  const [fixMode, setFixMode] = useState<FixMode>('fix_math');
+  const [fixMode, setFixMode] = useState<FixMode>('enforce_cr'); // Changed default from 'fix_math'
   const [fixedBlock, setFixedBlock] = useState<PF1eStatBlock | null>(null);
   const [fixLogs, setFixLogs] = useState<FixLogEntry[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
@@ -129,18 +129,18 @@ export const ValidatorPlayground: React.FC = () => {
             {/* MODE TOGGLE */}
             <div className="mode-toggle">
                 <button
-                    onClick={() => setFixMode('fix_math')}
-                    className={`mode-btn ${fixMode === 'fix_math' ? 'active' : 'inactive'}`}
-                    title="Trust Stats, Update CR"
-                >
-                    Fix Math
-                </button>
-                <button
                     onClick={() => setFixMode('enforce_cr')}
                     className={`mode-btn ${fixMode === 'enforce_cr' ? 'active' : 'inactive'}`}
                     title="Trust CR, Downgrade Stats"
                 >
                     Enforce CR
+                </button>
+                <button
+                    onClick={() => setFixMode('fix_math')}
+                    className={`mode-btn ${fixMode === 'fix_math' ? 'active' : 'inactive'}`}
+                    title="Trust Stats, Update CR"
+                >
+                    Fix Math
                 </button>
             </div>
          </div>

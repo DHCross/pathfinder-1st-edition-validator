@@ -34,33 +34,41 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
       messages.push({
         severity: 'warning',
         category: 'benchmarks',
-        message: `HP ${hpClaimed} is dangerously low (<70%) for CR ${block.cr} (Benchmark: ${benchmarks.hp}). Creature is a "Glass Jaw".`,
+        message: `HP ${hpClaimed} is very low for CR ${block.cr}. Standard is ~${benchmarks.hp}. Creature may be too fragile.`,
+        expected: benchmarks.hp,
+        actual: hpClaimed
       });
     } else if (hpPercent > 1.5) {
       messages.push({
         severity: 'warning',
         category: 'benchmarks',
-        message: `HP ${hpClaimed} is significantly high (>150%) for CR ${block.cr} (Benchmark: ${benchmarks.hp}). It may be a "Damage Sponge".`,
+        message: `HP ${hpClaimed} is very high for CR ${block.cr}. Standard is ~${benchmarks.hp}. This is a "Damage Sponge."`,
+        expected: benchmarks.hp,
+        actual: hpClaimed
       });
     }
   }
 
-  // 2. Validate AC (The "Glass Cannon" Check)
+  // 2. Validate AC (The "Unhittable" Check)
   const acClaimed = block.ac_claimed ?? block.ac ?? undefined;
   if (acClaimed !== undefined && typeof acClaimed === 'number') {
     const acDiff = acClaimed - benchmarks.ac;
 
-    if (acDiff < -3) {
+    if (acDiff < -4) {
       messages.push({
         severity: 'warning',
         category: 'benchmarks',
-        message: `AC ${acClaimed} is very low (-${Math.abs(acDiff)}) for CR ${block.cr} (Benchmark: ${benchmarks.ac}).`,
+        message: `AC ${acClaimed} is very low for CR ${block.cr}. Standard is ~${benchmarks.ac}. Creature will be crit often.`,
+        expected: benchmarks.ac,
+        actual: acClaimed
       });
-    } else if (acDiff > 5) {
+    } else if (acDiff > 4) {
       messages.push({
         severity: 'warning',
         category: 'benchmarks',
-        message: `AC ${acClaimed} is very high (+${acDiff}) for CR ${block.cr} (Benchmark: ${benchmarks.ac}).`,
+        message: `AC ${acClaimed} is very high for CR ${block.cr}. Standard is ~${benchmarks.ac}. Players may struggle to hit.`,
+        expected: benchmarks.ac,
+        actual: acClaimed
       });
     }
   }
@@ -79,7 +87,9 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
         messages.push({
           severity: 'warning',
           category: 'benchmarks',
-          message: `${s.name} Save +${s.val} is critically weak for CR ${block.cr} (Benchmark Poor Save: +${benchmarks.poorSave}).`,
+          message: `${s.name} Save +${s.val} is very low for CR ${block.cr}. Standard is ~+${benchmarks.poorSave}. It will fail often.`,
+          expected: benchmarks.poorSave,
+          actual: s.val
         });
       }
     }

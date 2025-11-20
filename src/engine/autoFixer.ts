@@ -15,7 +15,7 @@ export interface AutoFixResult {
   fixes: FixLogEntry[];
 }
 
-export function autoFixStatBlock(broken: PF1eStatBlock, mode: FixMode = 'fix_math'): AutoFixResult {
+export function autoFixStatBlock(broken: PF1eStatBlock, mode: FixMode = 'enforce_cr'): AutoFixResult {
   const fixed = JSON.parse(JSON.stringify(broken)) as PF1eStatBlock;
   const fixes: FixLogEntry[] = [];
 
