@@ -1,5 +1,6 @@
 import React from 'react';
 import { PF1eStatBlock, ValidationResult, ValidationMessage } from '../types/PF1eStatBlock';
+import { sortMessages, formatStatusBadgeText } from '../lib/validationHelpers';
 
 interface ValidatorDisplayProps {
   statBlock: PF1eStatBlock;
@@ -25,10 +26,8 @@ interface ValidatorDisplayProps {
 export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, validation, validationTarget }) => {
   
   // Helper to sort messages by severity: Critical -> Warning -> Note
-  const sortedMessages = [...validation.messages].sort((a, b) => {
-    const order = { critical: 0, warning: 1, note: 2 };
-    return order[a.severity] - order[b.severity];
-  });
+  // Use shared sorter for determinism (keeps tests simple and consistent)
+  const sortedMessages = sortMessages(validation.messages);
 
   const getBorderColor = (severity: string) => {
       switch(severity) {
@@ -80,7 +79,7 @@ export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, v
           title={validationTarget === 'fixed' ? 'Validating fixed (auto-fixed) version — see right panel' : 'Validating raw input version'}
           style={{ padding: '0.25rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 'bold', border: '1px solid', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', ...getStatusStyle(validation.status || 'PASS') }}
         >
-            {validation.status} {validationTarget ? `(${validationTarget === 'fixed' ? 'Fixed' : 'Raw'})` : ''} {validationTarget === 'fixed' && '➡️'}
+            {formatStatusBadgeText(validation.status || 'PASS', validationTarget)}
         </span>
       </div>
 
