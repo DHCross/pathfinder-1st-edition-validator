@@ -4,9 +4,10 @@ import { PF1eStatBlock, ValidationResult, ValidationMessage } from '../types/PF1
 interface ValidatorDisplayProps {
   statBlock: PF1eStatBlock;
   validation: ValidationResult;
+  validationTarget?: 'raw' | 'fixed'; // What version is being validated
 }
 
-export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, validation }) => {
+export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, validation, validationTarget }) => {
   
   // Helper to sort messages by severity: Critical -> Warning -> Note
   const sortedMessages = [...validation.messages].sort((a, b) => {
@@ -61,7 +62,7 @@ export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, v
         </div>
         {/* Overall Status Badge */}
         <span style={{ padding: '0.25rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 'bold', border: '1px solid', ...getStatusStyle(validation.status || 'PASS') }}>
-            {validation.status}
+            {validation.status} {validationTarget ? `(${validationTarget === 'fixed' ? 'Fixed' : 'Raw'})` : ''}
         </span>
       </div>
 

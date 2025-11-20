@@ -160,7 +160,11 @@ export const ValidatorPlayground: React.FC = () => {
                 Validating: {fixMode === 'enforce_cr' ? 'Auto-Fixed Version (Design Mode)' : 'Raw Input (Audit Mode)'}
             </div>
             {parsedBlock && validationResult ? (
-            <ValidatorDisplay statBlock={(fixMode === 'enforce_cr' ? fixedBlock : parsedBlock) as PF1eStatBlock} validation={validationResult} />
+            <ValidatorDisplay 
+              statBlock={(fixMode === 'enforce_cr' ? fixedBlock : parsedBlock) as PF1eStatBlock} 
+              validation={validationResult}
+              validationTarget={fixMode === 'enforce_cr' ? 'fixed' : 'raw'}
+            />
             ) : null}
         </div>
 
