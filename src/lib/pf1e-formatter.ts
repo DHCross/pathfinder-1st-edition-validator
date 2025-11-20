@@ -55,6 +55,9 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   const cmbTotal = (block.bab_claimed || 0) + getMod(block.str) + sizeData.cmbCmdMod;
   const cmbString = cmbTotal >= 0 ? `+${cmbTotal}` : `${cmbTotal}`;
 
+  // Helper to format stat (0 -> "—")
+  const fmtStat = (val: number) => (val === 0 ? '—' : val.toString());
+
   return `
 ${name}
 CR ${cr}
@@ -69,7 +72,7 @@ OFFENSE
 ${speedOutput}
 ${meleeOutput}
 ${rangedOutput}${specialAttacks}${spellsOutput}STATISTICS
-Str ${block.str}, Dex ${block.dex}, Con ${block.con}, Int ${block.int}, Wis ${block.wis}, Cha ${block.cha}
+Str ${fmtStat(block.str)}, Dex ${fmtStat(block.dex)}, Con ${fmtStat(block.con)}, Int ${fmtStat(block.int)}, Wis ${fmtStat(block.wis)}, Cha ${fmtStat(block.cha)}
 Base Atk +${block.bab_claimed || 0}; CMB ${cmbString}; CMD ${block.cmd_claimed || 10}
 Feats ${block.feats?.join(', ') || 'None'}
 ${skillsOutput}${languagesOutput}${gearOutput}${specialAbilitiesOutput}

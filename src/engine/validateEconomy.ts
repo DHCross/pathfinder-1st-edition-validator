@@ -1,7 +1,7 @@
 // src/engine/validateEconomy.ts
 
 import type { PF1eStatBlock, ValidationMessage, ValidationResult } from '../types/PF1eStatBlock';
-import { WealthByLevel, TreasureByCR, ClassStatistics } from '../rules/pf1e-data-tables';
+import { WealthByLevel, TreasureByCR } from '../rules/pf1e-data-tables';
 
 /**
  * Validates a creature's economy/wealth based on the Three Economic Tiers:

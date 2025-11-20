@@ -28,7 +28,7 @@ export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
   if (racialHD && typeof racialHD === 'number') {
     totalHD += racialHD;
     
-    const typeRule = CreatureTypeRules[creatureType];
+    const typeRule = CreatureTypeRules[creatureType as import('../rules/pf1e-data-tables').CreatureType];
     if (typeRule) {
         if (typeRule.babProgression === 'fast') expectedBAB += racialHD;
         else if (typeRule.babProgression === 'medium') expectedBAB += Math.floor(racialHD * 0.75);
@@ -43,7 +43,7 @@ export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
   for (const cls of classLevels) {
     const className = cls.className || cls.class_name;
     const levelCount = cls.level ?? cls.level_count ?? cls.level_count ?? 0;
-    const stats = ClassStatistics[className];
+    const stats = ClassStatistics[className as import('../rules/pf1e-data-tables').PfClassName];
 
     if (!stats) {
       messages.push({
@@ -64,7 +64,7 @@ export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
   }
 
   // --- 2. DERIVED STATS & SIZE MODIFIERS ---
-  const sizeEntry = SizeConstants[block.size] || { acAttackMod: 0, cmbCmdMod: 0, stealthMod: 0 };
+  const sizeEntry = SizeConstants[block.size as import('../rules/pf1e-data-tables').CreatureSize] || { acAttackMod: 0, cmbCmdMod: 0, stealthMod: 0 };
   const sizeSpecial = (sizeEntry.cmbCmdMod ?? sizeEntry.cmbCmdMod) || 0;
 
   const str = block.str ?? block.ability_scores?.str ?? 10;

@@ -77,7 +77,8 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   if (xpMatch) block.xp = parseInt(xpMatch[1].replace(/,/g, ''));
 
   // Type & Class Detection
-  const typeMatch = fullText.match(/(LG|NG|CG|LN|N|CN|LE|NE|CE)\s+(Fine|Diminutive|Tiny|Small|Medium|Large|Huge|Gargantuan|Colossal)\s+([a-zA-Z\-\s\(\)]+)/i);
+  // Stop capturing Type when we hit "Init", "Senses", or a digit (CR/Level)
+  const typeMatch = fullText.match(/(LG|NG|CG|LN|N|CN|LE|NE|CE)\s+(Fine|Diminutive|Tiny|Small|Medium|Large|Huge|Gargantuan|Colossal)\s+([a-zA-Z\-\s\(\)]+?)(?=\s*(?:Init|Senses|CR|Level|\d))/i);
   if (typeMatch) {
     block.alignment = typeMatch[1];
     block.size = typeMatch[2] as CreatureSize;
@@ -138,20 +139,23 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   const cmdMatch = fullText.match(/CMD\s*(\d+)/i);
   if (cmdMatch) block.cmd_claimed = parseInt(cmdMatch[1]);
 
-  // Attributes
-  const strMatch = /Str\s*(\d+)/i.exec(fullText);
-  const dexMatch = /Dex\s*(\d+)/i.exec(fullText);
-  const conMatch = /Con\s*(\d+)/i.exec(fullText);
-  const intMatch = /Int\s*(\d+)/i.exec(fullText);
-  const wisMatch = /Wis\s*(\d+)/i.exec(fullText);
-  const chaMatch = /Cha\s*(\d+)/i.exec(fullText);
+  // 5. Ability Scores
+  // Supports "Str 15", "Str: 15", "Str —", "Str -"
+  const parseStat = (text: string, name: string) => {
+    const regex = new RegExp(`${name}\\s*(\\d+|[\\u2013\\u2014\\-])`, 'i');
+    const match = text.match(regex);
+    if (!match) return 10; // Default
+    const val = match[1];
+    if (/\d/.test(val)) return parseInt(val);
+    return 0; // Treat "—" or "-" as 0
+  };
 
-  if (strMatch) block.str = parseInt(strMatch[1]);
-  if (dexMatch) block.dex = parseInt(dexMatch[1]);
-  if (conMatch) block.con = parseInt(conMatch[1]);
-  if (intMatch) block.int = parseInt(intMatch[1]);
-  if (wisMatch) block.wis = parseInt(wisMatch[1]);
-  if (chaMatch) block.cha = parseInt(chaMatch[1]);
+  block.str = parseStat(fullText, 'Str');
+  block.dex = parseStat(fullText, 'Dex');
+  block.con = parseStat(fullText, 'Con');
+  block.int = parseStat(fullText, 'Int');
+  block.wis = parseStat(fullText, 'Wis');
+  block.cha = parseStat(fullText, 'Cha');
 
   if (block.ac_claimed) block.ac = block.ac_claimed;
   if (block.touch_ac_claimed) block.touch = block.touch_ac_claimed;

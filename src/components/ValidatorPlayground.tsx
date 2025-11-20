@@ -10,21 +10,23 @@ import { PF1eStatBlock, ValidationResult } from '../types/PF1eStatBlock';
 import './ValidatorPlayground.css';
 
 const SAMPLE_TEXT = `Fire Beetle
-CR 1/3
-XP 135
-N Small vermin
-Init +0; Senses Perception +0
+CR 1
+XP 400
+N Small Vermin
+Init +0; Senses Darkvision 60 ft.; Perception +0
 DEFENSE
 AC 12, touch 11, flat-footed 12
-hp 4 (1d8)
+hp 50 (1d8+46)
 Fort +2, Ref +0, Will +0
+Immune mind-affecting effects
 OFFENSE
-Speed 30 ft.
+Speed 30 ft., fly 30 ft. (poor)
 Melee bite +1 (1d4)
+Special Abilities Luminescence
 STATISTICS
-Str 10, Dex 11, Con 11, Int 10, Wis 10, Cha 7
+Str 10, Dex 11, Con 11, Int -, Wis 10, Cha 7
 Base Atk +0; CMB -1; CMD 9
-Feats Weapon Finesse
+Feats None
 Treasure None`;
 
 export const ValidatorPlayground: React.FC = () => {
@@ -45,12 +47,19 @@ export const ValidatorPlayground: React.FC = () => {
     }
 
     try {
+      // 1. Parse
       const parsed = parsePF1eStatBlock(rawInput);
       setParsedBlock(parsed);
 
-      const vBasics = validateBasics(parsed);
-      const vBench = validateBenchmarks(parsed);
-      const vEcon = validateEconomy(parsed);
+      // 2. Auto-Fix (Run this BEFORE validation)
+      const { block: fixed, fixes } = autoFixStatBlock(parsed, fixMode);
+      setFixedBlock(fixed);
+      setFixLogs(fixes);
+
+      // 3. Validate the FIXED Block (So warnings disappear if fixed)
+      const vBasics = validateBasics(fixed);
+      const vBench = validateBenchmarks(fixed);
+      const vEcon = validateEconomy(fixed);
 
       const combined: ValidationResult = {
         valid: vBasics.valid && vBench.valid && vEcon.valid,
@@ -60,11 +69,6 @@ export const ValidatorPlayground: React.FC = () => {
         messages: [...vBasics.messages, ...vBench.messages, ...vEcon.messages]
       };
       setValidationResult(combined);
-
-      // Execute Fixer
-      const { block: fixed, fixes } = autoFixStatBlock(parsed, fixMode);
-      setFixedBlock(fixed);
-      setFixLogs(fixes);
 
     } catch (e) {
       console.error(e);
