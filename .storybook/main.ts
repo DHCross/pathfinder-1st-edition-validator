@@ -15,6 +15,14 @@ const config: StorybookConfig = {
   "framework": {
     "name": "@storybook/react-vite",
     "options": {}
+  },
+  async viteFinal(config) {
+    const { mergeConfig } = await import('vite');
+    return mergeConfig(config, {
+      build: {
+        chunkSizeWarningLimit: 1500, // Increase warning limit to 1.5MB to suppress Storybook bundle warnings
+      },
+    });
   }
 };
 export default config;

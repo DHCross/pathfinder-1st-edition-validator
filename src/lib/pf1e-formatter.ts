@@ -1,7 +1,7 @@
 // src/lib/pf1e-formatter.ts
 
 import { PF1eStatBlock } from '../types/PF1eStatBlock';
-import { ClassStatistics, CreatureTypeRules } from '../rules/pf1e-data-tables';
+import { ClassStatistics, CreatureTypeRules, SizeConstants } from '../rules/pf1e-data-tables';
 
 export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   const { name, cr, xp, size, type } = block;
@@ -50,6 +50,10 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   // Calculate Perception (Use claimed if available, otherwise +0)
   const percVal = block.perception_claimed !== undefined ? (block.perception_claimed >= 0 ? `+${block.perception_claimed}` : `${block.perception_claimed}`) : '+0';
 
+  // CALCULATE CMB WITH SIZE MODIFIER
+  const sizeData = SizeConstants[size] || { acAttackMod: 0, cmbCmdMod: 0 };
+  const cmbTotal = (block.bab_claimed || 0) + getMod(block.str) + sizeData.cmbCmdMod;
+  const cmbString = cmbTotal >= 0 ? `+${cmbTotal}` : `${cmbTotal}`;
 
   return `
 ${name}
@@ -66,7 +70,7 @@ ${speedOutput}
 ${meleeOutput}
 ${rangedOutput}${specialAttacks}${spellsOutput}STATISTICS
 Str ${block.str}, Dex ${block.dex}, Con ${block.con}, Int ${block.int}, Wis ${block.wis}, Cha ${block.cha}
-Base Atk +${block.bab_claimed || 0}; CMB +${(block.bab_claimed || 0) + getMod(block.str)}; CMD ${block.cmd_claimed || 10}
+Base Atk +${block.bab_claimed || 0}; CMB ${cmbString}; CMD ${block.cmd_claimed || 10}
 Feats ${block.feats?.join(', ') || 'None'}
 ${skillsOutput}${languagesOutput}${gearOutput}${specialAbilitiesOutput}
 `.trim();
