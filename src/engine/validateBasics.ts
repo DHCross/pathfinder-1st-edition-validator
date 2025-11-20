@@ -64,23 +64,55 @@ export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
   }
 
   // --- 2. DERIVED STATS & SIZE MODIFIERS ---
-  const sizeEntry = SizeConstants[block.size as import('../rules/pf1e-data-tables').CreatureSize] || { acAttackMod: 0, cmbCmdMod: 0, stealthMod: 0 };
-  const sizeSpecial = (sizeEntry.cmbCmdMod ?? sizeEntry.cmbCmdMod) || 0;
-
+  const sizeData = SizeConstants[block.size as import('../rules/pf1e-data-tables').CreatureSize] || { acAttackMod: 0, cmbCmdMod: 0, stealthMod: 0 };
   const str = block.str ?? block.ability_scores?.str ?? 10;
   const dex = block.dex ?? block.ability_scores?.dex ?? 10;
   const strMod = Math.floor((str - 10) / 2);
   const dexMod = Math.floor((dex - 10) / 2);
 
-  const expectedCMD = 10 + expectedBAB + strMod + dexMod + sizeSpecial;
-  const claimedCMD = block.cmd_claimed ?? block.cmd ?? undefined;
+  // A. Validate BAB (The Root Cause)
+  let babStatus: 'MATCH' | 'MISMATCH' = 'MATCH';
+  
+  if (block.bab_claimed !== undefined && block.bab_claimed !== expectedBAB) {
+      babStatus = 'MISMATCH';
+      messages.push({
+          category: 'basics',
+          severity: 'error',
+          message: `Base Attack Bonus (BAB) +${block.bab_claimed} is invalid for ${totalHD} HD. Expected +${expectedBAB} (${block.type} progression).`,
+          expected: expectedBAB,
+          actual: block.bab_claimed
+      });
+  }
 
-  if (claimedCMD !== undefined && claimedCMD !== null && claimedCMD !== expectedCMD) {
-    messages.push({
-      severity: 'error',
-      category: 'basics',
-      message: `Calculated CMD is ${expectedCMD} (10 + BAB ${expectedBAB} + Str ${strMod} + Dex ${dexMod} + Size ${sizeSpecial}), but stat block claims ${claimedCMD}.`,
-    });
+  // B. Validate CMD (The Symptom)
+  // Calculate Expected CMD based on legal math (using EXPECTED BAB)
+  const legalCMD = 10 + expectedBAB + strMod + dexMod + sizeData.cmbCmdMod;
+  
+  // Calculate "Source Logic" CMD (using CLAIMED BAB) - did they do the math right, even if BAB is wrong?
+  const sourceMathCMD = 10 + (block.bab_claimed || 0) + strMod + dexMod + sizeData.cmbCmdMod;
+
+  if (block.cmd_claimed) {
+      if (block.cmd_claimed === legalCMD) {
+          // Perfect Match
+      } else if (block.cmd_claimed === sourceMathCMD && babStatus === 'MISMATCH') {
+          // Their math is internally consistent, but based on bad BAB.
+          messages.push({
+              category: 'basics',
+              severity: 'warning', // Soften to warning
+              message: `CMD ${block.cmd_claimed} matches the source's (incorrect) BAB of +${block.bab_claimed}. If BAB were corrected to +${expectedBAB}, CMD would be ${legalCMD}.`,
+              expected: legalCMD,
+              actual: block.cmd_claimed
+          });
+      } else {
+          // It's just wrong everywhere
+          messages.push({
+              category: 'basics',
+              severity: 'error',
+              message: `Calculated CMD is ${legalCMD} (10 + Legal BAB ${expectedBAB} + Str ${strMod} + Dex ${dexMod} + Size ${sizeData.cmbCmdMod}), but stat block claims ${block.cmd_claimed}.`,
+              expected: legalCMD,
+              actual: block.cmd_claimed
+          });
+      }
   }
 
   // --- 3. FEAT COUNT ---
