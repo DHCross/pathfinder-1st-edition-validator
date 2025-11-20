@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { parsePF1eStatBlock } from '../lib/pf1e-parser';
 import { formatPF1eStatBlock } from '../lib/pf1e-formatter';
-import { autoFixStatBlock, FixLogEntry } from '../engine/autoFixer';
+import { autoFixStatBlock, FixLogEntry, FixMode } from '../engine/autoFixer';
 import { validateBasics } from '../engine/validateBasics';
 import { validateBenchmarks } from '../engine/validateBenchmarks';
 import { ValidationResult } from '../types/PF1eStatBlock';
@@ -26,18 +26,27 @@ Treasure None`;
 
 export const ValidatorPlayground: React.FC = () => {
   const [rawInput, setRawInput] = useState(SAMPLE_TEXT);
-  const [fixedBlock, setFixedBlock] = useState(() => autoFixStatBlock(parsePF1eStatBlock(SAMPLE_TEXT)).block);
+  const [fixMode, setFixMode] = useState<FixMode>('fix_math');
+  const [fixedBlock, setFixedBlock] = useState(() => autoFixStatBlock(parsePF1eStatBlock(SAMPLE_TEXT), 'fix_math').block);
   const [fixes, setFixes] = useState<FixLogEntry[]>([]);
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.currentTarget.value;
     setRawInput(newText);
-    
+    runValidation(newText, fixMode);
+  };
+
+  const handleModeChange = (mode: FixMode) => {
+    setFixMode(mode);
+    runValidation(rawInput, mode);
+  };
+
+  const runValidation = (text: string, mode: FixMode) => {
     try {
-      const parsed = parsePF1eStatBlock(newText);
+      const parsed = parsePF1eStatBlock(text);
       
-      const { block: fixed, fixes: newFixes } = autoFixStatBlock(parsed);
+      const { block: fixed, fixes: newFixes } = autoFixStatBlock(parsed, mode);
       setFixedBlock(fixed);
       setFixes(newFixes);
       
@@ -55,6 +64,15 @@ export const ValidatorPlayground: React.FC = () => {
       case 'error': return '#dc2626';
       case 'warning': return '#ea580c';
       case 'info': return '#2563eb';
+    }
+  };
+
+  const getFixActionColor = (action?: 'changed' | 'preserved' | 'warning') => {
+    switch (action) {
+      case 'changed': return '#065f46'; // green
+      case 'preserved': return '#b45309'; // amber
+      case 'warning': return '#991b1b'; // red
+      default: return '#047857';
     }
   };
 
@@ -143,11 +161,16 @@ export const ValidatorPlayground: React.FC = () => {
               <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
                 {fixes.map((fix, idx) => (
                   <li key={idx} style={{ 
-                    color: '#047857',
+                    color: getFixActionColor(fix.action),
                     marginBottom: '0.5rem',
                     fontSize: '0.875rem'
                   }}>
                     <strong>{fix.feature}:</strong> {fix.oldValue} → <strong>{fix.newValue}</strong>
+                    <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', opacity: 0.85 }}>
+                      {fix.action === 'changed' && '✅ Changed'}
+                      {fix.action === 'preserved' && '🛡️ Preserved'}
+                      {fix.action === 'warning' && '⚠️ Warning'}
+                    </span>
                     <div style={{ fontSize: '0.75rem', marginTop: '0.1rem', color: '#065f46' }}>
                       {fix.reason}
                     </div>
@@ -161,9 +184,49 @@ export const ValidatorPlayground: React.FC = () => {
 
       {/* Column 3: Fixed Output */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
-          ✨ Auto-Fixed Version
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
+            ✨ Auto-Fixed Version
+          </h2>
+          
+          {/* Mode Toggle */}
+          <div style={{ display: 'flex', backgroundColor: '#e5e7eb', borderRadius: '0.25rem', padding: '0.25rem' }}>
+            <button
+              onClick={() => handleModeChange('fix_math')}
+              style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '0.75rem',
+                borderRadius: '0.25rem',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: fixMode === 'fix_math' ? 700 : 400,
+                backgroundColor: fixMode === 'fix_math' ? 'white' : 'transparent',
+                color: fixMode === 'fix_math' ? '#1d4ed8' : '#4b5563',
+                boxShadow: fixMode === 'fix_math' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
+              }}
+              title="Trust Stats, Update CR"
+            >
+              Fix Math
+            </button>
+            <button
+              onClick={() => handleModeChange('enforce_cr')}
+              style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '0.75rem',
+                borderRadius: '0.25rem',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: fixMode === 'enforce_cr' ? 700 : 400,
+                backgroundColor: fixMode === 'enforce_cr' ? 'white' : 'transparent',
+                color: fixMode === 'enforce_cr' ? '#1d4ed8' : '#4b5563',
+                boxShadow: fixMode === 'enforce_cr' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
+              }}
+              title="Trust CR, Downgrade Stats"
+            >
+              Enforce CR
+            </button>
+          </div>
+        </div>
         <textarea
           value={formatPF1eStatBlock(fixedBlock)}
           readOnly

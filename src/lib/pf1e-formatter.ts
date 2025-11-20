@@ -30,7 +30,8 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   }
 
   const classString = block.classLevels?.map(c => `${c.className} ${c.level}`).join(', ') || '';
-  const typeLine = classString ? `${alignment} ${size} ${type} ${classString}` : `${alignment} ${size} ${type}`;
+  const displayType = block.subtypes && block.subtypes.length > 0 ? block.subtypes.join(', ') : type;
+  const typeLine = classString ? `${alignment} ${size} ${displayType} ${classString}` : `${alignment} ${size} ${displayType}`;
 
   // --- RESTORE PRESERVED SECTIONS ---
   const meleeOutput = block.melee_line || `Melee weapon +${block.bab_claimed || 0} (1d8)`;

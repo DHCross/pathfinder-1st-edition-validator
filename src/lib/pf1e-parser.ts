@@ -82,6 +82,8 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
     block.alignment = typeMatch[1];
     block.size = typeMatch[2] as CreatureSize;
     const rawType = typeMatch[3].trim();
+    // Preserve the raw subtype token(s) so that the formatter can render the original type label
+    block.subtypes = rawType.split(/,\s*/).map(s => s.trim()).filter(Boolean);
     
     // Map narrative types to mechanical types
     if (/Fiend|Devil|Demon|Daemon|Angel|Archon|Azata|Chaos-Beast/i.test(rawType)) block.type = 'Outsider';
