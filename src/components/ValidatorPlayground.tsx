@@ -7,6 +7,7 @@ import { validateBenchmarks } from '../engine/validateBenchmarks';
 import { validateEconomy } from '../engine/validateEconomy';
 import { ValidatorDisplay } from './ValidatorDisplay';
 import { PF1eStatBlock, ValidationResult } from '../types/PF1eStatBlock';
+import './ValidatorPlayground.css';
 
 const SAMPLE_TEXT = `Fire Beetle
 CR 1/3
@@ -71,12 +72,12 @@ export const ValidatorPlayground: React.FC = () => {
   }, [rawInput, fixMode]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', padding: '1rem', height: '100vh', backgroundColor: '#f9fafb', fontFamily: 'sans-serif', boxSizing: 'border-box' }}>
+    <div className="validator-playground">
       {/* COLUMN 1: RAW INPUT */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', height: '100%' }}>
-        <h2 style={{ fontWeight: 'bold', fontSize: '1.125rem', color: '#374151', margin: 0 }}>1. Raw Stat Block</h2>
+      <div className="validator-column">
+        <h2 className="validator-header">1. Raw Stat Block</h2>
         <textarea
-          style={{ flex: 1, padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', resize: 'none', outline: 'none' }}
+          className="validator-textarea"
           value={rawInput}
           onChange={(e) => setRawInput(e.target.value)}
           spellCheck={false}
@@ -85,9 +86,9 @@ export const ValidatorPlayground: React.FC = () => {
       </div>
 
       {/* COLUMN 2: AUDIT & LOGS */}
-      <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div className="validator-scroll-area">
         <div>
-            <h3 style={{ fontWeight: 'bold', fontSize: '1.125rem', marginBottom: '0.5rem', color: '#374151', margin: 0 }}>2. Rules Lawyer Audit</h3>
+            <h3 className="validator-header">2. Rules Lawyer Audit (v2)</h3>
             {parsedBlock && validationResult ? (
             <ValidatorDisplay statBlock={parsedBlock} validation={validationResult} />
             ) : null}
@@ -95,20 +96,20 @@ export const ValidatorPlayground: React.FC = () => {
 
         {/* NEW: FIX REPORT */}
         {fixLogs.length > 0 && (
-            <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.5rem', padding: '1rem' }}>
-                <h4 style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '0.5rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+            <div className="fix-report">
+                <h4 className="fix-report-header">
                     🛠️ Auto-Fixes Applied ({fixMode === 'fix_math' ? 'Audit Mode' : 'Design Mode'})
                 </h4>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <ul className="fix-list">
                     {fixLogs.map((fix, i) => (
-                        <li key={i} style={{ fontSize: '0.75rem', color: '#1e3a8a' }}>
+                        <li key={i} className="fix-item">
                             <div style={{ fontWeight: 600 }}>{fix.feature}</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.125rem' }}>
-                                <span style={{ textDecoration: 'line-through', opacity: 0.6 }}>{fix.oldValue}</span>
+                            <div className="fix-change-row">
+                                <span className="fix-old">{fix.oldValue}</span>
                                 <span>→</span>
-                                <span style={{ fontWeight: 'bold', backgroundColor: 'white', padding: '0 0.25rem', borderRadius: '0.25rem', border: '1px solid #dbeafe' }}>{fix.newValue}</span>
+                                <span className="fix-new">{fix.newValue}</span>
                             </div>
-                            <div style={{ color: '#3b82f6', fontStyle: 'italic', marginTop: '0.125rem' }}>{fix.reason}</div>
+                            <div className="fix-reason">{fix.reason}</div>
                         </li>
                     ))}
                 </ul>
@@ -117,44 +118,22 @@ export const ValidatorPlayground: React.FC = () => {
       </div>
 
       {/* COLUMN 3: FIX OUTPUT (With Toggle) */}
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="validator-column">
          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h2 style={{ fontWeight: 'bold', fontSize: '1.125rem', color: '#374151', margin: 0 }}>3. Auto-Fixed Version</h2>
+            <h2 className="validator-header">3. Auto-Fixed Version</h2>
             
             {/* MODE TOGGLE */}
-            <div style={{ display: 'flex', backgroundColor: '#e5e7eb', borderRadius: '0.25rem', padding: '0.25rem' }}>
+            <div className="mode-toggle">
                 <button
                     onClick={() => setFixMode('fix_math')}
-                    style={{
-                        padding: '0.25rem 0.75rem',
-                        fontSize: '0.75rem',
-                        borderRadius: '0.25rem',
-                        transition: 'all 0.2s',
-                        border: 'none',
-                        cursor: 'pointer',
-                        backgroundColor: fixMode === 'fix_math' ? 'white' : 'transparent',
-                        color: fixMode === 'fix_math' ? '#1d4ed8' : '#4b5563',
-                        fontWeight: fixMode === 'fix_math' ? 'bold' : 'normal',
-                        boxShadow: fixMode === 'fix_math' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none'
-                    }}
+                    className={`mode-btn ${fixMode === 'fix_math' ? 'active' : 'inactive'}`}
                     title="Trust Stats, Update CR"
                 >
                     Fix Math
                 </button>
                 <button
                     onClick={() => setFixMode('enforce_cr')}
-                    style={{
-                        padding: '0.25rem 0.75rem',
-                        fontSize: '0.75rem',
-                        borderRadius: '0.25rem',
-                        transition: 'all 0.2s',
-                        border: 'none',
-                        cursor: 'pointer',
-                        backgroundColor: fixMode === 'enforce_cr' ? 'white' : 'transparent',
-                        color: fixMode === 'enforce_cr' ? '#1d4ed8' : '#4b5563',
-                        fontWeight: fixMode === 'enforce_cr' ? 'bold' : 'normal',
-                        boxShadow: fixMode === 'enforce_cr' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none'
-                    }}
+                    className={`mode-btn ${fixMode === 'enforce_cr' ? 'active' : 'inactive'}`}
                     title="Trust CR, Downgrade Stats"
                 >
                     Enforce CR
@@ -162,9 +141,9 @@ export const ValidatorPlayground: React.FC = () => {
             </div>
          </div>
          
-         <div style={{ flex: 1, backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '0.25rem', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', padding: '1rem', overflowY: 'auto', marginTop: '0.5rem' }}>
+         <div className="output-area">
             {fixedBlock ? (
-                <pre style={{ fontSize: '0.75rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap', color: '#1f2937', margin: 0 }}>
+                <pre className="output-pre">
                     {formatPF1eStatBlock(fixedBlock)}
                 </pre>
             ) : (
@@ -174,23 +153,7 @@ export const ValidatorPlayground: React.FC = () => {
         
         <button 
             onClick={() => fixedBlock && navigator.clipboard.writeText(formatPF1eStatBlock(fixedBlock))}
-            style={{
-                marginTop: '0.5rem',
-                width: '100%',
-                padding: '0.5rem',
-                backgroundColor: '#16a34a',
-                color: 'white',
-                fontWeight: 'bold',
-                borderRadius: '0.25rem',
-                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                transition: 'background-color 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                border: 'none',
-                cursor: 'pointer'
-            }}
+            className="copy-btn"
         >
             📋 Copy to Clipboard
         </button>
