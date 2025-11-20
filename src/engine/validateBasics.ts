@@ -3,6 +3,7 @@ import { SizeConstants, ClassStatistics, XP_Table, CreatureTypeRules } from '../
 
 export function validateBasics(block: PF1eStatBlock): ValidationResult {
   const messages: ValidationMessage[] = [];
+  let isCritical = false; // Track if we hit any red flags
   
   // --- 1. CHASSIS CALCULATION ---
   let totalHD = (block.racialHD || 0);
@@ -36,21 +37,22 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
   const strMod = Math.floor(((block.str || 10) - 10) / 2);
   const dexMod = Math.floor(((block.dex || 10) - 10) / 2);
 
-  // A. Validate BAB (The Root Cause)
+  // A. Validate BAB (Critical)
   let babStatus: 'MATCH' | 'MISMATCH' = 'MATCH';
   
   if (block.bab_claimed !== undefined && block.bab_claimed !== expectedBAB) {
       babStatus = 'MISMATCH';
+      isCritical = true;
       messages.push({
           category: 'basics',
-          severity: 'error',
-          message: `Base Attack Bonus (BAB) +${block.bab_claimed} is invalid for ${totalHD} HD. Expected +${expectedBAB} (${block.type} progression).`,
+          severity: 'critical', // RED ZONE
+          message: `Base Attack Bonus (BAB) +${block.bab_claimed} is illegal for ${totalHD} HD. It must be +${expectedBAB} according to ${block.type} progression.`,
           expected: expectedBAB,
           actual: block.bab_claimed
       });
   }
 
-  // B. Validate CMD (The Symptom)
+  // B. Validate CMD (Warning/Note)
   // Calculate Expected CMD based on legal math (using EXPECTED BAB)
   const legalCMD = 10 + expectedBAB + strMod + dexMod + sizeData.cmbCmdMod;
   
@@ -64,16 +66,17 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
           // Their math is internally consistent, but based on bad BAB.
           messages.push({
               category: 'basics',
-              severity: 'warning', // Soften to warning
+              severity: 'warning', // ORANGE ZONE
               message: `CMD ${block.cmd_claimed} matches the source's (incorrect) BAB of +${block.bab_claimed}. If BAB were corrected to +${expectedBAB}, CMD would be ${legalCMD}.`,
               expected: legalCMD,
               actual: block.cmd_claimed
           });
       } else {
           // It's just wrong everywhere
+          isCritical = true;
           messages.push({
               category: 'basics',
-              severity: 'error',
+              severity: 'critical', // RED ZONE
               message: `Calculated CMD is ${legalCMD} (10 + Legal BAB ${expectedBAB} + Str ${strMod} + Dex ${dexMod} + Size ${sizeData.cmbCmdMod}), but stat block claims ${block.cmd_claimed}.`,
               expected: legalCMD,
               actual: block.cmd_claimed
@@ -108,8 +111,8 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
   }
 
   return {
-    valid: messages.length === 0,
-    status: messages.some(m => m.severity === 'error') ? 'FAIL' : (messages.length > 0 ? 'WARN' : 'PASS'),
+    valid: !isCritical,
+    status: isCritical ? 'FAIL' : (messages.length > 0 ? 'WARN' : 'PASS'),
     messages: messages,
   };
 }

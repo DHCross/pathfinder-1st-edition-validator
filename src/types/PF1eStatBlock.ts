@@ -28,6 +28,7 @@ export interface PF1eStatBlock {
 
   // Defense
   hp: number;
+  hd?: string; // e.g. "4d10+8"
   ac: number;
   touch?: number;
   flatFooted?: number;
@@ -85,8 +86,10 @@ export interface PF1eStatBlock {
   speed_line?: string;
 }
 
+export type ValidationSeverity = 'critical' | 'warning' | 'note'; // The 3 Tiers
+
 export interface ValidationMessage {
-  severity: 'error' | 'warning' | 'info';
+  severity: ValidationSeverity; // Updated type
   category: string;
   message: string;
   expected?: any;
@@ -94,8 +97,7 @@ export interface ValidationMessage {
 }
 
 export interface ValidationResult {
-  valid: boolean;
+  valid: boolean; // True if 0 critical errors
   messages: ValidationMessage[];
-  // Optional derived status used by UI/stories: 'PASS' | 'WARN' | 'FAIL'
   status?: 'PASS' | 'WARN' | 'FAIL';
 }

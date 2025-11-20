@@ -1,5 +1,5 @@
 import React from 'react';
-import { PF1eStatBlock, ValidationResult } from '../types/PF1eStatBlock';
+import { PF1eStatBlock, ValidationResult, ValidationMessage } from '../types/PF1eStatBlock';
 
 interface ValidatorDisplayProps {
   statBlock: PF1eStatBlock;
@@ -7,6 +7,40 @@ interface ValidatorDisplayProps {
 }
 
 export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, validation }) => {
+  
+  // Helper to sort messages by severity: Critical -> Warning -> Note
+  const sortedMessages = [...validation.messages].sort((a, b) => {
+    const order = { critical: 0, warning: 1, note: 2 };
+    return order[a.severity] - order[b.severity];
+  });
+
+  const getBorderColor = (severity: string) => {
+      switch(severity) {
+          case 'critical': return '#ef4444'; // Red
+          case 'warning': return '#f59e0b'; // Amber
+          case 'note': return '#9ca3af'; // Gray
+          default: return '#3b82f6'; // Blue
+      }
+  };
+
+  const getBgColor = (severity: string) => {
+      switch(severity) {
+          case 'critical': return '#fef2f2';
+          case 'warning': return '#fffbeb';
+          case 'note': return '#f9fafb';
+          default: return '#eff6ff';
+      }
+  };
+
+  const getIcon = (severity: string) => {
+      switch(severity) {
+          case 'critical': return '🛑';
+          case 'warning': return '⚠️';
+          case 'note': return '📝';
+          default: return 'ℹ️';
+      }
+  };
+
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'PASS': return { backgroundColor: '#dcfce7', color: '#166534', borderColor: '#bbf7d0' };
@@ -20,36 +54,46 @@ export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, v
     <div style={{ padding: '1.5rem', maxWidth: '42rem', margin: '0 auto', fontFamily: 'sans-serif', border: '1px solid #e5e7eb', borderRadius: '0.5rem', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', backgroundColor: 'white' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem', marginBottom: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>{statBlock.name}</h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>{statBlock.name || 'Unnamed'}</h2>
           <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
             {statBlock.size} {statBlock.type} • CR {statBlock.cr_text || statBlock.cr}
           </p>
         </div>
+        {/* Overall Status Badge */}
         <span style={{ padding: '0.25rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 'bold', border: '1px solid', ...getStatusStyle(validation.status || 'PASS') }}>
-          {validation.status}
+            {validation.status}
         </span>
       </div>
 
+      {/* Message List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {validation.messages.length === 0 ? (
-          <p style={{ color: '#6b7280', fontStyle: 'italic' }}>No validation errors found.</p>
+        {sortedMessages.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af', fontStyle: 'italic', border: '2px dashed #e5e7eb', borderRadius: '0.5rem' }}>
+             ✨ No issues found. This stat block is mechanically perfect.
+          </div>
         ) : (
-          validation.messages.map((msg, idx) => (
+          sortedMessages.map((msg, idx) => (
             <div key={idx} style={{ 
                 padding: '0.75rem', 
                 borderRadius: '0.25rem', 
                 borderLeftWidth: '4px', 
                 borderLeftStyle: 'solid',
-                backgroundColor: msg.severity === 'error' ? '#fef2f2' : '#fefce8',
-                borderLeftColor: msg.severity === 'error' ? '#ef4444' : '#eab308'
+                border: '1px solid #e5e7eb',
+                borderLeftColor: getBorderColor(msg.severity),
+                backgroundColor: getBgColor(msg.severity)
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.75 }}>{msg.category}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+                 <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    {getIcon(msg.severity)} {msg.category.toUpperCase()}
+                 </span>
               </div>
-              <p style={{ marginTop: '0.25rem', fontWeight: 500, color: '#1f2937' }}>{msg.message}</p>
-              {msg.expected !== undefined && (
-                  <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#6b7280' }}>
-                    Expected: {JSON.stringify(msg.expected)} | Actual: {JSON.stringify(msg.actual)}
+              <p style={{ color: '#1f2937', margin: 0 }}>{msg.message}</p>
+              
+              {/* Optional: Show expected/actual diff if data is there */}
+              {(msg.expected !== undefined || msg.actual !== undefined) && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', fontFamily: 'monospace', backgroundColor: 'rgba(255,255,255,0.5)', padding: '0.25rem', borderRadius: '0.25rem', display: 'inline-block' }}>
+                      {msg.actual !== undefined && <span style={{ marginRight: '0.5rem', color: '#dc2626' }}>Found: {JSON.stringify(msg.actual)}</span>}
+                      {msg.expected !== undefined && <span style={{ color: '#16a34a' }}>Expected: {JSON.stringify(msg.expected)}</span>}
                   </div>
               )}
             </div>

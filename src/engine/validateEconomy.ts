@@ -18,7 +18,7 @@ export function validateEconomy(statBlock: PF1eStatBlock): ValidationResult {
       valid: true,
       messages: [
         {
-          severity: 'info',
+          severity: 'note',
           category: 'economy',
           message: 'No gear value provided; skipping economy validation.',
         },
@@ -49,7 +49,7 @@ export function validateEconomy(statBlock: PF1eStatBlock): ValidationResult {
 
   if (Math.abs(deviationPercent) <= TOLERANCE_PERCENT) {
     messages.push({
-      severity: 'info',
+      severity: 'note',
       category: 'economy',
       message: `Wealth is on target for ${tier} (${actualWealth} gp vs expected ${expectedWealth} gp).`,
       expected: expectedWealth,
@@ -75,7 +75,7 @@ export function validateEconomy(statBlock: PF1eStatBlock): ValidationResult {
 
   // Derive a simple status for UI: error -> FAIL, warning -> WARN, else PASS
   let status: 'PASS' | 'WARN' | 'FAIL' = 'PASS';
-  if (messages.some((m) => m.severity === 'error')) {
+  if (messages.some((m) => m.severity === 'critical')) {
     status = 'FAIL';
   } else if (messages.some((m) => m.severity === 'warning')) {
     status = 'WARN';

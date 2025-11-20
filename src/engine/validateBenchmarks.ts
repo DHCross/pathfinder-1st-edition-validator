@@ -85,7 +85,7 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
     }
   }
 
-  const hasError = messages.some((m) => m.severity === 'error');
+  const hasError = messages.some((m) => m.severity === 'critical');
 
   return {
     valid: !hasError,
