@@ -1,9 +1,9 @@
 import type { PF1eStatBlock, ValidationMessage, ValidationResult } from '../types/PF1eStatBlock';
-import { SizeConstants, ClassStatistics, XP_Table } from '../rules/pf1e-data-tables';
+import { SizeConstants, ClassStatistics, XP_Table, CreatureTypeRules } from '../rules/pf1e-data-tables';
 
 /**
  * Smart basics validator adapted to this repo's data shapes.
- * - Calculates total HD and expected BAB from class levels
+ * - Calculates total HD and expected BAB from class levels AND racial HD
  * - Computes expected CMD using size modifiers
  * - Validates feat counts and XP vs CR (when possible)
  */
@@ -18,16 +18,28 @@ export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
   // Normalize alternate field names that sometimes appear in demo data
   const classLevels = block.classLevels || block.class_levels || [];
   const racialHD = block.racialHD ?? block.racial_hd_count ?? 0;
+  const creatureType = block.type || 'Humanoid';
 
   // --- 1. CHASSIS CALCULATION (HD & BAB) ---
   let totalHD = 0;
   let expectedBAB = 0;
 
+  // Racial BAB
   if (racialHD && typeof racialHD === 'number') {
     totalHD += racialHD;
-    // Racial HD BAB contribution could be added here if desired
+    
+    const typeRule = CreatureTypeRules[creatureType];
+    if (typeRule) {
+        if (typeRule.babProgression === 'fast') expectedBAB += racialHD;
+        else if (typeRule.babProgression === 'medium') expectedBAB += Math.floor(racialHD * 0.75);
+        else expectedBAB += Math.floor(racialHD * 0.5);
+    } else {
+        // Fallback
+        expectedBAB += Math.floor(racialHD * 0.75);
+    }
   }
 
+  // Class BAB
   for (const cls of classLevels) {
     const className = cls.className || cls.class_name;
     const levelCount = cls.level ?? cls.level_count ?? cls.level_count ?? 0;
@@ -61,7 +73,7 @@ export function validateBasics(block: PF1eStatBlock | any): ValidationResult {
   const dexMod = Math.floor((dex - 10) / 2);
 
   const expectedCMD = 10 + expectedBAB + strMod + dexMod + sizeSpecial;
-  const claimedCMD = block.cmd ?? block.cmd_claimed ?? block.cmb ?? undefined;
+  const claimedCMD = block.cmd_claimed ?? block.cmd ?? undefined;
 
   if (claimedCMD !== undefined && claimedCMD !== null && claimedCMD !== expectedCMD) {
     messages.push({
