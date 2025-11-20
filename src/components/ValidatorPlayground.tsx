@@ -92,7 +92,7 @@ export const ValidatorPlayground: React.FC = () => {
       {/* COLUMN 2: AUDIT & LOGS */}
       <div className="validator-scroll-area">
         <div>
-            <h3 className="validator-header">2. Rules Lawyer Audit (v2)</h3>
+            <h3 className="validator-header">2. Rules Lawyer Audit (v2.1)</h3>
             {parsedBlock && validationResult ? (
             <ValidatorDisplay statBlock={parsedBlock} validation={validationResult} />
             ) : null}
