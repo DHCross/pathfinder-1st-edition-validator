@@ -112,30 +112,40 @@ export const ValidatorPlayground: React.FC = () => {
       setFixedBlock(fixed);
       setFixLogs([...currentLogs, ...fixes]);
 
-            // C. VALIDATE
-            // Choose which block to audit based on mode: Design = fixed, Audit = raw
-            const auditedBlock = (fixMode === 'enforce_cr') ? fixed : parsedBlock;
+      // C. VALIDATE
+      // ALWAYS check the raw block for structural issues (HD/CR mismatch, etc.)
+      // Then add mode-specific validation (Design = fixed, Audit = raw)
+      
+      // Step 1: Get structural warnings from the raw input
+      const rawStructuralCheck = validateBasics(parsedBlock);
+      const structuralErrors = rawStructuralCheck.messages.filter(m => m.category === 'structure');
+      
+      // Step 2: Choose which block to audit for other issues based on mode
+      const auditedBlock = (fixMode === 'enforce_cr') ? fixed : parsedBlock;
 
-            let vBasics = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
-            let vBench = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
-            let vEcon = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
+      let vBasics = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
+      let vBench = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
+      let vEcon = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
 
-            if (auditedBlock) {
-                vBasics = validateBasics(auditedBlock as PF1eStatBlock);
-                vBench = validateBenchmarks(auditedBlock as PF1eStatBlock);
-                vEcon = validateEconomy(auditedBlock as PF1eStatBlock);
-            }
+      if (auditedBlock) {
+        vBasics = validateBasics(auditedBlock as PF1eStatBlock);
+        vBench = validateBenchmarks(auditedBlock as PF1eStatBlock);
+        vEcon = validateEconomy(auditedBlock as PF1eStatBlock);
+      }
 
-            const combined: ValidationResult = {
-                valid: vBasics.valid && vBench.valid && vEcon.valid,
-                status: (vBasics.status === 'FAIL' || vEcon.status === 'FAIL') ? 'FAIL'
-                            : (vBasics.status === 'WARN' || vEcon.status === 'WARN' || vBench.status === 'WARN') ? 'WARN'
-                            : 'PASS',
-                messages: [...vBasics.messages, ...vBench.messages, ...vEcon.messages]
-            };
-            setValidationResult(combined);
+      // Step 3: Merge structural errors from raw with other validation results
+      const allMessages = [...structuralErrors, ...vBasics.messages, ...vBench.messages, ...vEcon.messages];
+      const hasStructuralFail = structuralErrors.some(m => m.severity === 'critical');
+      const hasOtherFail = vBasics.status === 'FAIL' || vEcon.status === 'FAIL';
 
-  }, [parsedBlock, targetCR, fixMode]);
+      const combined: ValidationResult = {
+        valid: !hasStructuralFail && !hasOtherFail,
+        status: (hasStructuralFail || hasOtherFail) ? 'FAIL'
+              : (vBasics.status === 'WARN' || vEcon.status === 'WARN' || vBench.status === 'WARN') ? 'WARN'
+              : 'PASS',
+        messages: allMessages
+      };
+      setValidationResult(combined);  }, [parsedBlock, targetCR, fixMode]);
 
   return (
     <div className="validator-playground">
