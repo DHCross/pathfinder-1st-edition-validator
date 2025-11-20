@@ -112,22 +112,28 @@ export const ValidatorPlayground: React.FC = () => {
       setFixedBlock(fixed);
       setFixLogs([...currentLogs, ...fixes]);
 
-      // C. VALIDATE
-      // We validate the FIXED block to show the "Happy Path" by default.
-      // If the user wants to see errors, they can look at the logs or we can add a toggle later.
-      // The user requested: "Validation Panel immediately shows a PASS (because it's auditing the fixed version)."
-      const vBasics = validateBasics(fixed);
-      const vBench = validateBenchmarks(fixed);
-      const vEcon = validateEconomy(fixed);
+            // C. VALIDATE
+            // Choose which block to audit based on mode: Design = fixed, Audit = raw
+            const auditedBlock = (fixMode === 'enforce_cr') ? fixed : parsedBlock;
 
-      const combined: ValidationResult = {
-        valid: vBasics.valid && vBench.valid && vEcon.valid,
-        status: (vBasics.status === 'FAIL' || vEcon.status === 'FAIL') ? 'FAIL' 
-              : (vBasics.status === 'WARN' || vEcon.status === 'WARN' || vBench.status === 'WARN') ? 'WARN' 
-              : 'PASS',
-        messages: [...vBasics.messages, ...vBench.messages, ...vEcon.messages]
-      };
-      setValidationResult(combined);
+            let vBasics = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
+            let vBench = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
+            let vEcon = { valid: true, status: 'PASS', messages: [] } as ValidationResult;
+
+            if (auditedBlock) {
+                vBasics = validateBasics(auditedBlock as PF1eStatBlock);
+                vBench = validateBenchmarks(auditedBlock as PF1eStatBlock);
+                vEcon = validateEconomy(auditedBlock as PF1eStatBlock);
+            }
+
+            const combined: ValidationResult = {
+                valid: vBasics.valid && vBench.valid && vEcon.valid,
+                status: (vBasics.status === 'FAIL' || vEcon.status === 'FAIL') ? 'FAIL'
+                            : (vBasics.status === 'WARN' || vEcon.status === 'WARN' || vBench.status === 'WARN') ? 'WARN'
+                            : 'PASS',
+                messages: [...vBasics.messages, ...vBench.messages, ...vEcon.messages]
+            };
+            setValidationResult(combined);
 
   }, [parsedBlock, targetCR, fixMode]);
 
@@ -149,8 +155,12 @@ export const ValidatorPlayground: React.FC = () => {
       <div className="validator-scroll-area">
         <div>
             <h3 className="validator-header">2. Rules Lawyer Audit (v2.1)</h3>
+            {/* Clarify which block is being validated to avoid confusion */}
+            <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                Validating: {fixMode === 'enforce_cr' ? 'Auto-Fixed Version (Design Mode)' : 'Raw Input (Audit Mode)'}
+            </div>
             {parsedBlock && validationResult ? (
-            <ValidatorDisplay statBlock={parsedBlock} validation={validationResult} />
+            <ValidatorDisplay statBlock={(fixMode === 'enforce_cr' ? fixedBlock : parsedBlock) as PF1eStatBlock} validation={validationResult} />
             ) : null}
         </div>
 
