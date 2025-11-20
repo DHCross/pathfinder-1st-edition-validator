@@ -1,5 +1,5 @@
 import { PF1eStatBlock, ValidationResult, ValidationMessage } from '../types/PF1eStatBlock';
-import { SizeConstants, ClassStatistics, XP_Table, CreatureTypeRules } from '../rules/pf1e-data-tables'; 
+import { SizeConstants, ClassStatistics, XP_Table, CreatureTypeRules, MonsterStatisticsByCR } from '../rules/pf1e-data-tables'; 
 
 export function validateBasics(block: PF1eStatBlock): ValidationResult {
   const messages: ValidationMessage[] = [];
@@ -31,6 +31,28 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
         else expectedBAB += Math.floor(cls.level * 0.5);
     }
   }
+
+  // --- NEW: STRUCTURAL HD vs CR CHECK ---
+  // If total HD greatly exceeds what is expected for the declared CR, flag as critical.
+  // We use the MonsterStatisticsByCR table (benchmark HP) to estimate expected HD.
+  const crKey = (block.cr || '').toString();
+  const benchmarkRow = MonsterStatisticsByCR.find(r => r.cr === crKey);
+  if (benchmarkRow) {
+      // Use an approximate average die value as a proxy (4.5 ~= d8 average).
+      const proxyExpectedHD = Math.max(1, Math.round((benchmarkRow.hp || 1) / 4.5));
+      const HD_THRESHOLD = proxyExpectedHD * 2; // more than twice expected HD is structural
+      if (totalHD > HD_THRESHOLD && totalHD >= 3) {
+          isCritical = true;
+          messages.push({
+              category: 'structure',
+              severity: 'critical',
+              message: `HD/CR Mismatch: ${totalHD} Hit Dice is inappropriate for CR ${block.cr}. This HD count suggests a much higher CR than declared and is a structural contradiction.`,
+              expected: `${proxyExpectedHD} HD (max ${HD_THRESHOLD})`,
+              actual: `${totalHD} HD`
+          });
+      }
+  }
+  // --- END STRUCTURAL CHECK ---
 
   // --- 2. DERIVED STATS & SIZE MODIFIERS ---
   const sizeData = SizeConstants[block.size] || { acAttackMod: 0, cmbCmdMod: 0 };
