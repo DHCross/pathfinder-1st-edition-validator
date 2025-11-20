@@ -125,6 +125,15 @@ See the `Rules/` directory for detailed specifications:
 - **Treasure and XP Validation**: CR-to-XP-to-Treasure relationships
 - **Gear Validation**: Three Economic Tiers and pricing algorithms
 
+### How validation status works
+
+This project uses a concise Traffic Light System to communicate validation results:
+- 🔴 Critical (FAIL): structural or illegal rule violations
+- 🟡 Warning (WARN): suspicious deviations from benchmarks
+- ⚪ Note (PASS): informational only
+
+For details on interpretation and developer guidance, see `docs/TRAFFIC_LIGHT_SYSTEM.md`.
+
 ## Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md) for a history of notable changes.
