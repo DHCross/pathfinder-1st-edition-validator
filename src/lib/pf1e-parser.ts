@@ -39,6 +39,9 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
   // --- 1. SECTION EXTRACTION (Preserving the Soul) ---
   // We capture the full text lines for these sections so we can print them back out later.
   
+  const speedMatch = fullText.match(/Speed\s+(.+?)(?=\n|Melee|Ranged|Space|Special|Str|Statistic)/i);
+  if (speedMatch) block.speed_line = "Speed " + speedMatch[1].trim();
+
   const meleeMatch = fullText.match(/Melee\s+(.+?)(?=\n|Ranged|Space|Special|Str|Statistic)/i);
   if (meleeMatch) block.melee_line = "Melee " + meleeMatch[1].trim();
 
@@ -87,9 +90,10 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
     block.size = typeMatch[2] as CreatureSize;
     const rawType = typeMatch[3].trim();
     
-    if (/Fiend|Devil|Demon|Daemon|Angel|Archon/i.test(rawType)) block.type = 'Outsider';
+    if (/Fiend|Devil|Demon|Daemon|Angel|Archon|Azata|Chaos-Beast/i.test(rawType)) block.type = 'Outsider';
     else if (/Dragon/i.test(rawType)) block.type = 'Dragon';
     else if (/Undead/i.test(rawType)) block.type = 'Undead';
+    else if (/Beast/i.test(rawType)) block.type = 'Magical Beast';
     else block.type = rawType.split(' ')[0] as CreatureType;
   }
 

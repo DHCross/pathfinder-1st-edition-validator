@@ -37,6 +37,7 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   const percVal = block.perception_claimed !== undefined ? (block.perception_claimed >= 0 ? `+${block.perception_claimed}` : `${block.perception_claimed}`) : '+0';
 
   // --- RESTORE PRESERVED SECTIONS ---
+  const speedOutput = block.speed_line || 'Speed 30 ft.';
   const meleeOutput = block.melee_line || `Melee weapon +${block.bab_claimed || 0} (1d8)`;
   const rangedOutput = block.ranged_line ? `${block.ranged_line}\n` : '';
   const specialAttacks = block.special_attacks_line ? `${block.special_attacks_line}\n` : '';
@@ -57,7 +58,7 @@ AC ${block.ac_claimed || block.ac}, touch ${block.touch_ac_claimed || 10}, flat-
 hp ${block.hp_claimed || block.hp} (${hpFormula})
 Fort +${block.fort_save_claimed || 0}, Ref +${block.ref_save_claimed || 0}, Will +${block.will_save_claimed || 0}
 OFFENSE
-Speed 30 ft.
+${speedOutput}
 ${meleeOutput}
 ${rangedOutput}${specialAttacks}${spellsOutput}STATISTICS
 Str ${block.str}, Dex ${block.dex}, Con ${block.con}, Int ${block.int}, Wis ${block.wis}, Cha ${block.cha}

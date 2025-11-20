@@ -51,6 +51,7 @@ export interface PF1eStatBlock {
   feats?: string[];
 
   // NEW: Preservation Fields (The "Soul" of the monster)
+  speed_line?: string;
   melee_line?: string;          
   ranged_line?: string;         
   special_attacks_line?: string;
