@@ -86,6 +86,13 @@ export interface PF1eStatBlock {
   speed_line?: string;
 }
 
+// Traffic Light System
+// ---------------------
+// The validator produces messages classified by severity. These severities are
+// designed as a "traffic light" for human readers:
+//  - 'critical': 🔴 Illegal / Structural errors that must be fixed (maps to FAIL)
+//  - 'warning' : 🟡 Suspicious deviations from benchmarks (maps to WARN)
+//  - 'note'    : ⚪ Informational only (no effect on PASS/WARN/FAIL)
 export type ValidationSeverity = 'critical' | 'warning' | 'note'; // The 3 Tiers
 
 export interface ValidationMessage {

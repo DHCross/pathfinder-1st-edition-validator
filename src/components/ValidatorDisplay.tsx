@@ -7,6 +7,21 @@ interface ValidatorDisplayProps {
   validationTarget?: 'raw' | 'fixed'; // What version is being validated
 }
 
+/**
+ * Traffic Light System (Tiered Reporting)
+ * ---------------------------------------------------
+ * This UI component renders validation messages using a 3-tier traffic light system:
+ *  - Critical (🔴): illegal / structural / must fix -> severity: 'critical'
+ *  - Warning  (🟡): suspicious / review -> severity: 'warning'
+ *  - Note     (⚪): informational / flavor -> severity: 'note'
+ *
+ * Design Mode (default): validates the fixed block, but structural errors from the raw block
+ * are merged and always surfaced.
+ * Audit Mode           : validates the raw input only.
+ *
+ * The validationTarget prop ("raw" | "fixed") is used to label the badge and the
+ * ARIA/tooltip for accessibility.
+ */
 export const ValidatorDisplay: React.FC<ValidatorDisplayProps> = ({ statBlock, validation, validationTarget }) => {
   
   // Helper to sort messages by severity: Critical -> Warning -> Note
