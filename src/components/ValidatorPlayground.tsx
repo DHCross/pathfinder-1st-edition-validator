@@ -93,7 +93,7 @@ export const ValidatorPlayground: React.FC = () => {
       {/* Column 2: Validation Results */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflow: 'auto' }}>
         <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
-          ⚖️ Validation Results
+          ⚖️ Validation & Fixes
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {validationResults.map((result, idx) => (
