@@ -157,9 +157,9 @@ export const MonsterBuilderWizard: React.FC = () => {
                 <button onClick={() => { navigator.clipboard.writeText(formatPF1eStatBlock(fixed)); }} style={{ padding: '6px 10px' }}>Copy Fixed Block</button>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    const json = JSON.stringify(fixed, null, 2);
                     try {
-                      const json = JSON.stringify(fixed, null, 2);
                       const blob = new Blob([json], { type: 'application/json' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
@@ -172,9 +172,16 @@ export const MonsterBuilderWizard: React.FC = () => {
                       a.remove();
                       // Revoke object URL after a short delay
                       setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                      // Also copy JSON to the clipboard so the user has the data immediately
+                      try {
+                        await navigator.clipboard.writeText(json);
+                      } catch (copyErr) {
+                        // Ignore copy errors (some environments may block clipboard API)
+                      }
                     } catch (e) {
                       // Fallback: copy JSON to clipboard
-                      navigator.clipboard.writeText(JSON.stringify(fixed, null, 2));
+                      try { await navigator.clipboard.writeText(json); } catch (_) { /* ignore */ }
                     }
                   }}
                   style={{ padding: '6px 10px' }}
