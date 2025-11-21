@@ -4,6 +4,8 @@ The Homebrewer's Bestiary: A Guide to Custom Monster Creation
 
 Crafting a custom monster is a core skill for any Game Master, an art form that breathes life into the untold corners of your world. While published bestiaries offer a wealth of adversaries, the ability to design a creature from the ground up allows you to create truly unique, memorable, and perfectly tailored challenges for your players. This guide provides a systematic, step-by-step process for this creative endeavor, transforming a basic idea into a fully realized stat block ready for the tabletop.
 
+**Important:** This document is a design guide and checklist — it is *not* an interactive, step-by-step builder. The project's Monster Builder Wizard is an assisted authoring tool that displays a Raw Preview, an Auto‑Fixed Preview, and Validation output; it does not enforce a linear, on-screen workflow. Use the sections below as design and verification guidance rather than as literal UI steps.
+
 A well-designed monster is far more than a set of statistics; it is a vital story element, a memorable challenge, and a key component of a living, breathing world. It embodies the philosophy of the GM as a world-builder, where every creature has a purpose, a history, and a role to play in the unfolding narrative. The following sections will deconstruct the monster creation process into manageable steps, guiding you from the initial spark of a concept to the final, polished stat block.
 
 2. Step 1: Concept and Role – The "Why" Before the "What"

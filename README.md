@@ -118,6 +118,10 @@ console.log(result.messages);
 
 ## Documentation
 
+## Project Blueprint
+
+The detailed architecture and feature set for a proposed Monster & NPC Builder app, named **Bestiary Architect**, is documented in `docs/Bestiary_Architect_Blueprint.md`. This document outlines the vision, modular architecture, and user workflows for a rules-grounded and creativity-focused builder.
+
 See the `Rules/` directory for detailed specifications:
 
 - **Character Wealth Validator Guide**: Core economic principles and WBL benchmarks
