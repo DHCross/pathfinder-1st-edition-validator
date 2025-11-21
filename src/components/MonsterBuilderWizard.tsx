@@ -200,11 +200,16 @@ export const MonsterBuilderWizard: React.FC = () => {
 
         {/* Right: Preview & Validation */}
         <div style={{ flex: 1, paddingLeft: 12 }}>
-          <h4>Raw Preview</h4>
-          <pre style={{ background: '#f9fafb', padding: 10, borderRadius: 6 }}>{formatPF1eStatBlock(builtRaw)}</pre>
-
-          <h4 style={{ marginTop: 12 }}>Auto-Fixed Preview</h4>
-          <pre style={{ background: '#f9fafb', padding: 10, borderRadius: 6 }}>{formatPF1eStatBlock(fixed)}</pre>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <h4>Raw Preview</h4>
+              <pre style={{ background: '#f9fafb', padding: 10, borderRadius: 6, height: '280px', overflow: 'auto' }}>{formatPF1eStatBlock(builtRaw)}</pre>
+            </div>
+            <div style={{ flex: 1 }}>
+              <h4>Auto-Fixed Preview</h4>
+              <pre style={{ background: '#f9fafb', padding: 10, borderRadius: 6, height: '280px', overflow: 'auto' }}>{formatPF1eStatBlock(fixed)}</pre>
+            </div>
+          </div>
 
           <div style={{ marginTop: 12 }}>
             <h4>Validation</h4>

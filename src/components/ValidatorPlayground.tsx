@@ -116,9 +116,12 @@ export const ValidatorPlayground: React.FC = () => {
       // ALWAYS check the raw block for structural issues (HD/CR mismatch, etc.)
       // Then add mode-specific validation (Design = fixed, Audit = raw)
       
-      // Step 1: Get structural warnings from the raw input
-      const rawStructuralCheck = validateBasics(parsedBlock);
-      const structuralErrors = rawStructuralCheck.messages.filter(m => m.category === 'structure');
+    // Step 1: Get structural warnings from the raw input
+    const rawStructuralCheck = validateBasics(parsedBlock);
+    const structuralErrors = rawStructuralCheck.messages.filter(m => m.category === 'structure');
+    // Also capture raw benchmark warnings (HP/AC misclaims) and surface them even in Design Mode
+    const rawBenchmarkCheck = validateBenchmarks(parsedBlock);
+    const benchmarkWarnings = rawBenchmarkCheck.messages.filter(m => m.severity !== 'note');
       
       // Step 2: Choose which block to audit for other issues based on mode
       const auditedBlock = (fixMode === 'enforce_cr') ? fixed : parsedBlock;
@@ -134,7 +137,7 @@ export const ValidatorPlayground: React.FC = () => {
       }
 
       // Step 3: Merge structural errors from raw with other validation results
-      const allMessages = [...structuralErrors, ...vBasics.messages, ...vBench.messages, ...vEcon.messages];
+    const allMessages = [...structuralErrors, ...benchmarkWarnings, ...vBasics.messages, ...vBench.messages, ...vEcon.messages];
       const hasStructuralFail = structuralErrors.some(m => m.severity === 'critical');
       const hasOtherFail = vBasics.status === 'FAIL' || vEcon.status === 'FAIL';
 

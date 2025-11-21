@@ -112,6 +112,53 @@ export function autoFixStatBlock(broken: PF1eStatBlock, mode: FixMode = 'enforce
       fixed.cmd_claimed = expectedCMD;
   }
 
+    // 3b. Fix CMB (if applicable)
+    const expectedCMB = expectedBAB + strMod + (sizeData.cmbCmdMod || 0);
+    const originalCMB = fixed.cmb;
+    if (expectedCMB !== originalCMB) {
+      logChange('CMB', originalCMB, expectedCMB, `Recalculated: BAB(${expectedBAB}) + Str(${strMod}) + Size(${sizeData.cmbCmdMod})`);
+      fixed.cmb = expectedCMB;
+    }
+
+    // 3c. Fix Saves (Fort/Ref/Will) - compute from HD and type rules
+    const totalHD = ((fixed.racialHD ?? 0) + (fixed.classLevels || []).reduce((s, c) => s + (c.level || 0), 0));
+    const goodSaveVal = Math.floor(2 + (totalHD / 2));
+    const badSaveVal = Math.floor(totalHD / 3);
+    const typeRule = CreatureTypeRules[fixed.type] || { goodSaves: [], hitDieType: 8 };
+    const expectedFort = (typeRule.goodSaves?.includes('Fort') ? goodSaveVal : badSaveVal) + Math.floor(((fixed.con ?? 10) - 10) / 2);
+    const expectedRef = (typeRule.goodSaves?.includes('Ref') ? goodSaveVal : badSaveVal) + Math.floor(((fixed.dex ?? 10) - 10) / 2);
+    const expectedWill = (typeRule.goodSaves?.includes('Will') ? goodSaveVal : badSaveVal) + Math.floor(((fixed.wis ?? 10) - 10) / 2);
+
+    const originalFort = fixed.fort_save_claimed ?? fixed.fort;
+    if (expectedFort !== originalFort) {
+      logChange('Fort Save', originalFort, expectedFort, `Recalculated for ${totalHD} HD and con ${fixed.con}`);
+      fixed.fort = expectedFort;
+      fixed.fort_save_claimed = expectedFort;
+    }
+
+    const originalRef = fixed.ref_save_claimed ?? fixed.ref;
+    if (expectedRef !== originalRef) {
+      logChange('Ref Save', originalRef, expectedRef, `Recalculated for ${totalHD} HD and dex ${fixed.dex}`);
+      fixed.ref = expectedRef;
+      fixed.ref_save_claimed = expectedRef;
+    }
+
+    const originalWill = fixed.will_save_claimed ?? fixed.will;
+    if (expectedWill !== originalWill) {
+      logChange('Will Save', originalWill, expectedWill, `Recalculated for ${totalHD} HD and wis ${fixed.wis}`);
+      fixed.will = expectedWill;
+      fixed.will_save_claimed = expectedWill;
+    }
+
+    // 3d. Init (Dex mod)
+      const initMod = Math.floor(((fixed.dex ?? 10) - 10) / 2);
+      const originalInit = fixed.init_claimed ?? undefined;
+      if (initMod !== originalInit) {
+        logChange('Init', originalInit, initMod, `Set to Dex modifier ${initMod}`);
+        // Only set the claimed init field (there is no base 'init' in the type)
+        fixed.init_claimed = initMod;
+      }
+
   // --- MODE: FIX MATH (Up-Scaling) ---
   // If the stats say "CR 4" but the label says "CR 1", we fix the Label.
   if (mode === 'fix_math') {

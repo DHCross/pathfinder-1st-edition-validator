@@ -6,8 +6,12 @@ import { ClassStatistics, CreatureTypeRules, SizeConstants } from '../rules/pf1e
 export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   const lines: string[] = [];
 
-  // Helper to format stat (0 -> "—")
-  const fmtStat = (val: number) => (val === 0 ? '—' : val.toString());
+    // Helper to format stat (undefined/null/0 -> "—")
+    const fmtStat = (val?: number | null) => {
+        if (val === undefined || val === null) return '—';
+        if (val === 0) return '—';
+        return val.toString();
+    };
 
   // --- HEADER ---
   lines.push(`${block.name}`);
@@ -20,7 +24,13 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   
   const subtypeStr = (block.subtypes && block.subtypes.length > 0) ? ` (${block.subtypes.join(', ')})` : '';
   lines.push(`${block.alignment || 'CN'} ${block.size} ${block.type}${subtypeStr} ${classStr}`.trim());
-  lines.push(`Init undefined; Senses ; Perception +0`);
+    // INIT: prefer claimed init, else use Dex modifier
+    const dexMod = Math.floor(((block.dex ?? 10) - 10) / 2);
+    const initVal = block.init_claimed ?? dexMod;
+    const initStr = initVal >= 0 ? `+${initVal}` : `${initVal}`;
+    const senses = block.speed_line ? '' : '';
+    const perception = (block.perception_claimed !== undefined) ? `+${block.perception_claimed}` : '+0';
+    lines.push(`Init ${initStr}; Senses ${block.senses || ''}; Perception ${perception}`.trim());
 
   // --- DEFENSE ---
   lines.push('DEFENSE');
@@ -30,9 +40,13 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   if (block.touch_ac_claimed || block.touch) acMods.push(`touch ${block.touch_ac_claimed || block.touch}`);
   if (block.flat_footed_ac_claimed || block.flatFooted) acMods.push(`flat-footed ${block.flat_footed_ac_claimed || block.flatFooted}`);
   lines.push(`AC ${block.ac_claimed || block.ac}${acMods.length > 0 ? ', ' + acMods.join(', ') : ''}`);
-  lines.push(`hp ${block.hp} (${block.hd})`);
+    lines.push(`hp ${fmtStat(block.hp)} (${block.hd || '—'})`);
   
-  const saves = `Fort +${block.fort}, Ref +${block.ref}, Will +${block.will}`;
+    // Prints claimed or computed saves; prefix signs
+    const fortVal = (block.fort_save_claimed ?? block.fort ?? 0);
+    const refVal = (block.ref_save_claimed ?? block.ref ?? 0);
+    const willVal = (block.will_save_claimed ?? block.will ?? 0);
+    const saves = `Fort ${fortVal >= 0 ? '+' : ''}${fortVal}, Ref ${refVal >= 0 ? '+' : ''}${refVal}, Will ${willVal >= 0 ? '+' : ''}${willVal}`;
   lines.push(saves);
   
   // Defensive abilities would go here if parsed
@@ -52,7 +66,12 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   lines.push('STATISTICS');
   lines.push(`Str ${fmtStat(block.str)}, Dex ${fmtStat(block.dex)}, Con ${fmtStat(block.con)}, Int ${fmtStat(block.int)}, Wis ${fmtStat(block.wis)}, Cha ${fmtStat(block.cha)}`);
   
-  lines.push(`Base Atk +${block.bab_claimed}; CMB ${block.cmb_claimed}; CMD ${block.cmd_claimed}`);
+    const babVal = block.bab_claimed ?? block.bab ?? 0;
+    const strMod = Math.floor(((block.str ?? 10) - 10) / 2);
+    const sizeData = SizeConstants[block.size] || { acAttackMod: 0, cmbCmdMod: 0 };
+    const cmbComputed = (block.cmb ?? (babVal + strMod + (sizeData.cmbCmdMod || 0)));
+    const cmdVal = block.cmd_claimed ?? block.cmd ?? 10 + babVal + strMod + Math.floor(((block.dex ?? 10)-10)/2) + (sizeData.cmbCmdMod || 0);
+    lines.push(`Base Atk ${babVal >= 0 ? `+${babVal}` : babVal}; CMB ${cmbComputed >= 0 ? `+${cmbComputed}` : cmbComputed}; CMD ${cmdVal}`);
   
   if (block.feats && block.feats.length > 0) {
       lines.push(`Feats ${block.feats.join(', ')}`);
