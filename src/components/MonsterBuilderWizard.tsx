@@ -153,8 +153,34 @@ export const MonsterBuilderWizard: React.FC = () => {
                 <button onClick={() => setFixMode('fix_math')} style={{ backgroundColor: fixMode === 'fix_math' ? '#111827' : '#f3f4f6', color: fixMode === 'fix_math' ? 'white' : 'black', padding: '6px 10px', border: 'none' }}>Audit (Fix Math)</button>
               </div>
 
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
                 <button onClick={() => { navigator.clipboard.writeText(formatPF1eStatBlock(fixed)); }} style={{ padding: '6px 10px' }}>Copy Fixed Block</button>
+
+                <button
+                  onClick={() => {
+                    try {
+                      const json = JSON.stringify(fixed, null, 2);
+                      const blob = new Blob([json], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      const safeName = (fixed.name || 'creature').replace(/[^a-z0-9\-_]/gi, '_').toLowerCase();
+                      a.href = url;
+                      a.download = `${safeName}-cr-${fixed.cr || '0'}.json`;
+                      // Append, click, and remove to trigger download
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      // Revoke object URL after a short delay
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    } catch (e) {
+                      // Fallback: copy JSON to clipboard
+                      navigator.clipboard.writeText(JSON.stringify(fixed, null, 2));
+                    }
+                  }}
+                  style={{ padding: '6px 10px' }}
+                >
+                  Download JSON
+                </button>
               </div>
             </div>
           )}
