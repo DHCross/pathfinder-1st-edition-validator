@@ -45,6 +45,16 @@ export const BestiaryArchitectApp: React.FC = () => {
   const [step, setStep] = useState(0);
   const [state, setState] = useState(initialState);
 
+  const canProceed = useMemo(() => {
+    if (step === 0) {
+      return state.name.trim().length > 0;
+    }
+    return true;
+  }, [state.name, step]);
+
+  const nextLabel = step < MODULES.length - 1 ? `Next: ${MODULES[step + 1]}` : 'Finish';
+  const prevLabel = step === 0 ? 'Back' : `Back to ${MODULES[step - 1]}`;
+
   const snapshotTags = useMemo(
     () => [
       { label: `CR ${state.targetCR}`, tone: '#312e81' },
@@ -201,6 +211,42 @@ export const BestiaryArchitectApp: React.FC = () => {
               </div>
             </aside>
           </div>
+
+          <footer style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
+            <div style={{ color: '#6b7280', fontSize: 13 }}>
+              {step === 0 && 'Set name, path, and CR, then continue to Mechanics.'}
+              {step === 1 && 'Tune hit dice, then move to Narrative.'}
+              {step === 2 && 'Set role and motivation, then pick treasure.'}
+              {step === 3 && 'Finish treasury details or go back to adjust earlier steps.'}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => setStep(s => Math.max(0, s - 1))}
+                disabled={step === 0}
+                style={{
+                  ...pillButtonStyle(false),
+                  opacity: step === 0 ? 0.5 : 1,
+                  cursor: step === 0 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {prevLabel}
+              </button>
+              <button
+                onClick={() => setStep(s => Math.min(MODULES.length - 1, s + 1))}
+                disabled={!canProceed}
+                style={{
+                  ...pillButtonStyle(true),
+                  background: '#312e81',
+                  color: '#fff',
+                  borderColor: '#312e81',
+                  opacity: canProceed ? 1 : 0.5,
+                  cursor: canProceed ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {nextLabel}
+              </button>
+            </div>
+          </footer>
         </div>
       </div>
     </div>
