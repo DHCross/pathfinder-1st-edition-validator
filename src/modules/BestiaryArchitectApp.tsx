@@ -114,6 +114,7 @@ export const BestiaryArchitectApp: React.FC = () => {
 
   const nextLabel = step < MODULES.length - 1 ? `Next: ${MODULES[step + 1]}` : 'Finish';
   const prevLabel = step === 0 ? 'Back' : `Back to ${MODULES[step - 1]}`;
+  const derivedHP = Math.max(1, state.hd * 8);
 
   const snapshotTags = useMemo(
     () => [
@@ -333,6 +334,15 @@ export const BestiaryArchitectApp: React.FC = () => {
                 <div><strong>Role:</strong> {state.role}</div>
                 <div><strong>Motivation:</strong> {state.motivation}</div>
                 <div><strong>Treasure:</strong> {state.treasureType}</div>
+              </div>
+              <div style={{ marginTop: 10, padding: '10px 12px', background: '#ffffff', border: '1px dashed #e5e7eb', borderRadius: 10, display: 'grid', gap: 6, color: '#111827' }}>
+                <div style={{ fontWeight: 700 }}>Quick Stats</div>
+                <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
+                  <div><strong>HD:</strong> {state.hd}d8</div>
+                  <div><strong>HP (est):</strong> {derivedHP}</div>
+                  <div><strong>AC (placeholder):</strong> 10</div>
+                  <div><strong>Saves (placeholder):</strong> Fort 0 / Ref 0 / Will 0</div>
+                </div>
               </div>
 
               <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
