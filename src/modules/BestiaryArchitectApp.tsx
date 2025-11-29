@@ -5,7 +5,7 @@ import { validateBasics } from '../engine/validateBasics';
 import { validateBenchmarks } from '../engine/validateBenchmarks';
 import { validateEconomy } from '../engine/validateEconomy';
 import { XP_Table } from '../rules/pf1e-data-tables';
-import { PF1eStatBlock, ValidationMessage } from '../types/PF1eStatBlock';
+import { PF1eStatBlock, ValidationMessage, ValidationSeverity } from '../types/PF1eStatBlock';
 
 const MODULES = [
   'Foundation',
@@ -13,6 +13,73 @@ const MODULES = [
   'Narrative',
   'Treasury',
 ];
+
+type StepStatus = 'complete' | 'current' | 'upcoming';
+
+const progressStepStyle = (status: StepStatus): React.CSSProperties => {
+  const palette = {
+    complete: { bg: '#e0e7ff', border: '#c7d2fe', color: '#312e81' },
+    current: { bg: '#312e81', border: '#312e81', color: '#fff' },
+    upcoming: { bg: '#f1f5f9', border: '#e2e8f0', color: '#64748b' },
+  } as const;
+
+  const colors = palette[status];
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '10px 16px',
+    borderRadius: 999,
+    border: `1px solid ${colors.border}`,
+    background: colors.bg,
+    color: colors.color,
+    minWidth: 160,
+    justifyContent: 'flex-start',
+    transition: 'box-shadow 0.2s ease',
+    boxShadow: status === 'current' ? '0 8px 20px #312e8118' : 'none',
+    cursor: 'pointer',
+  };
+
+const severityPalette: Record<ValidationSeverity, { icon: string; color: string; bg: string; border: string }> = {
+  critical: { icon: '⛔', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+  warning: { icon: '⚠️', color: '#b45309', bg: '#fffbeb', border: '#fcd34d66' },
+  note: { icon: 'ℹ️', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+};
+
+type QuickFixKey = 'alignCrHd';
+
+type RuleActionHintConfig = {
+  guidance: string;
+  ctaLabel?: string;
+  ctaStep?: number;
+  quickFixKey?: QuickFixKey;
+  quickFixLabel?: string;
+};
+
+const categoryActionConfig: Record<string, RuleActionHintConfig> = {
+  structure: {
+    guidance: 'CR and Hit Dice should stay in sync to avoid illegal math.',
+    quickFixKey: 'alignCrHd',
+    quickFixLabel: 'Match CR to HD',
+    ctaLabel: 'Open Foundation',
+    ctaStep: 0,
+  },
+  basics: {
+    guidance: 'Review feats, XP, and chassis math inside Mechanics.',
+    ctaLabel: 'Go to Mechanics',
+    ctaStep: 1,
+  },
+  benchmarks: {
+    guidance: 'Tweak CR or HD until HP/AC benchmarks land in the safe range.',
+    ctaLabel: 'Adjust Mechanics',
+    ctaStep: 1,
+  },
+  economy: {
+    guidance: 'Adjust treasure tier or gear in the Treasury step.',
+    ctaLabel: 'Open Treasury',
+    ctaStep: 3,
+  },
+};
 
 export type ArchitectState = {
   name: string;
@@ -88,6 +155,8 @@ export const BestiaryArchitectApp: React.FC = () => {
     [basicsCheck.messages, benchmarkCheck.messages, economyCheck.messages]
   );
 
+  const actionableMessages = useMemo(() => allRulesMessages.filter(m => m.severity !== 'note'), [allRulesMessages]);
+
   const overallRulesStatus = useMemo(() => {
     if (allRulesMessages.some(m => m.severity === 'critical')) return 'FAIL';
     if (allRulesMessages.some(m => m.severity === 'warning')) return 'WARN';
@@ -127,6 +196,22 @@ export const BestiaryArchitectApp: React.FC = () => {
     [overallRulesStatus, state.buildPath, state.role, state.targetCR, state.treasureType],
   );
 
+  const handleRuleNavigation = (targetStep?: number) => {
+    if (typeof targetStep === 'number') {
+      setStep(targetStep);
+    }
+  };
+
+  const runQuickFix = (key: QuickFixKey) => {
+    switch (key) {
+      case 'alignCrHd':
+        setState(s => ({ ...s, targetCR: Math.min(25, Math.max(1, s.hd)) }));
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc, #eef2ff)' }}>
       <div style={{ maxWidth: 1200, margin: '32px auto', padding: '0 16px 48px' }}>
@@ -139,16 +224,55 @@ export const BestiaryArchitectApp: React.FC = () => {
             <div style={{ color: '#6b7280', fontWeight: 600, fontSize: 13 }}>Step {step + 1} of {MODULES.length}</div>
           </header>
 
-          <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-            {MODULES.map((mod, i) => (
-              <button
-                key={mod}
-                style={pillButtonStyle(step === i)}
-                onClick={() => setStep(i)}
-              >
-                {mod}
-              </button>
-            ))}
+          <nav style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {MODULES.map((mod, i) => {
+                const status: StepStatus = i < step ? 'complete' : i === step ? 'current' : 'upcoming';
+                return (
+                  <React.Fragment key={mod}>
+                    <button
+                      type="button"
+                      onClick={() => setStep(i)}
+                      style={progressStepStyle(status)}
+                      aria-current={status === 'current' ? 'step' : undefined}
+                    >
+                      <span
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          border: status === 'current' ? '2px solid #fff' : '2px solid transparent',
+                          background: status === 'current' ? '#4338ca' : status === 'complete' ? '#c7d2fe' : '#fff',
+                          color: status === 'current' ? '#fff' : status === 'complete' ? '#312e81' : '#94a3b8',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, lineHeight: 1 }}>Step {i + 1}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>{mod}</div>
+                      </div>
+                    </button>
+                    {i < MODULES.length - 1 && (
+                      <div
+                        aria-hidden
+                        style={{
+                          alignSelf: 'center',
+                          flexGrow: 1,
+                          minWidth: 30,
+                          height: 2,
+                          background: i < step ? '#c7d2fe' : '#e2e8f0',
+                        }}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </nav>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.65fr) minmax(260px, 1fr)', gap: 20, alignItems: 'start' }}>
@@ -350,29 +474,106 @@ export const BestiaryArchitectApp: React.FC = () => {
                 <div style={{ fontSize: 13, color: '#4b5563', marginBottom: 8 }}>
                   Live checks from Basics, Benchmarks, and Economy.
                 </div>
-                {allRulesMessages.filter(m => m.severity !== 'note').length === 0 ? (
+                {actionableMessages.length === 0 ? (
                   <div style={{ color: '#15803d', fontWeight: 600 }}>No issues detected for current inputs.</div>
                 ) : (
-                  <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6 }}>
-                    {allRulesMessages
-                      .filter(m => m.severity !== 'note')
-                      .map((msg, idx) => (
-                        <li key={idx} style={{ color: msg.severity === 'critical' ? '#b91c1c' : '#b45309' }}>
-                          <strong>{msg.category}:</strong> {msg.message}
-                        </li>
-                      ))}
-                  </ul>
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {actionableMessages.map((msg, idx) => {
+                      const severity = severityPalette[msg.severity];
+                      const actionConfig = categoryActionConfig[msg.category];
+                      const showQuickFix = Boolean(actionConfig?.quickFixKey);
+                      const showCTA = actionConfig?.ctaLabel && typeof actionConfig.ctaStep === 'number';
+                      return (
+                        <div
+                          key={`${msg.category}-${idx}`}
+                          style={{
+                            border: `1px solid ${severity.border}`,
+                            background: severity.bg,
+                            borderRadius: 12,
+                            padding: 12,
+                            color: severity.color,
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span aria-hidden style={{ fontSize: 18 }}>{severity.icon}</span>
+                              <div>
+                                <div style={{ fontWeight: 700, textTransform: 'capitalize', color: '#111827' }}>{msg.category}</div>
+                                <div style={{ fontSize: 12 }}>{msg.severity.toUpperCase()}</div>
+                              </div>
+                            </div>
+                          </div>
+                          <p style={{ margin: '8px 0', color: '#111827' }}>{msg.message}</p>
+                          {(msg.expected !== undefined || msg.actual !== undefined) && (
+                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: '#0f172a' }}>
+                              {msg.expected !== undefined && (
+                                <div>
+                                  <strong>Expected:</strong> {String(msg.expected)}
+                                </div>
+                              )}
+                              {msg.actual !== undefined && (
+                                <div>
+                                  <strong>Actual:</strong> {String(msg.actual)}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {actionConfig?.guidance && (
+                            <div style={{ marginTop: 8, fontSize: 13, color: '#475569' }}>{actionConfig.guidance}</div>
+                          )}
+                          {(showQuickFix || showCTA) && (
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                              {showQuickFix && actionConfig?.quickFixKey && (
+                                <button
+                                  type="button"
+                                  onClick={() => runQuickFix(actionConfig.quickFixKey!)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: 8,
+                                    border: '1px solid #c4b5fd',
+                                    background: '#ede9fe',
+                                    color: '#4c1d95',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {actionConfig.quickFixLabel || 'Apply quick fix'}
+                                </button>
+                              )}
+                              {showCTA && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRuleNavigation(actionConfig!.ctaStep)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: 8,
+                                    border: '1px solid #cbd5f5',
+                                    background: '#fff',
+                                    color: '#1e1b4b',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {actionConfig!.ctaLabel}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </aside>
           </div>
 
           <footer style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
-            <div style={{ color: '#6b7280', fontSize: 13 }}>
-              {step === 0 && 'Set name, path, and CR, then continue to Mechanics.'}
-              {step === 1 && 'Tune hit dice, then move to Narrative.'}
-              {step === 2 && 'Set role and motivation, then pick treasure.'}
-              {step === 3 && 'Finish treasury details or go back to adjust earlier steps.'}
+            <div style={{ color: '#475569', fontSize: 13, fontWeight: 500 }}>
+              {step === 0 && 'Complete the foundation card, then jump into Mechanics.'}
+              {step === 1 && 'Dial in stats before moving to Narrative flair.'}
+              {step === 2 && 'Capture story hooks, then define treasure.'}
+              {step === 3 && 'Lock in loot or revisit earlier steps as needed.'}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
