@@ -1,4 +1,4 @@
-Pathfinder 1E Rules Validator's Guide: NPCs and Treasure
+Pathfinder 1E Rules Validator's Guide: NPCs and Treasure 11.28.25
 
 Introduction: The Logic of the Stat Block
 
