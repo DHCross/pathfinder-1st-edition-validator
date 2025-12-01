@@ -95,6 +95,22 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
     }
   }
 
+  // --- NEW: CR/SIZE ALIGNMENT CHECK ---
+  // Ensure minimum CR matches creature size (e.g., Large CR ≥ 2, Huge CR ≥ 4, etc.)
+  const sizeMinCRTable: Record<string, number> = {
+    'Tiny': 0, 'Small': 0, 'Medium': 0, 'Large': 2, 'Huge': 4, 'Gargantuan': 6, 'Colossal': 8
+  };
+  const minCRforSize = sizeMinCRTable[block.size as string];
+  if (minCRforSize !== undefined && crValue < minCRforSize) {
+    messages.push({
+      severity: 'warning',
+      category: 'benchmarks',
+      message: `CR ${block.cr} is below minimum for ${block.size} size. ${block.size} creatures typically have CR ≥ ${minCRforSize}.`,
+      expected: minCRforSize,
+      actual: crValue
+    });
+  }
+
   const hasError = messages.some((m) => m.severity === 'critical');
 
   return {

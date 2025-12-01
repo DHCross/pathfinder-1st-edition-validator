@@ -146,6 +146,97 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
         });
     }
 
+    // --- 5. SIZE-BASED PHYSICAL ABILITY BASELINE CHECK ---
+    // Physical scores (STR, DEX, CON) should be "relatively close" to size defaults
+    const sizeBaselineScores: Record<string, { str: number; dex: number; con: number }> = {
+        'Tiny': { str: 3, dex: 16, con: 10 },
+        'Small': { str: 8, dex: 14, con: 10 },
+        'Medium': { str: 10, dex: 10, con: 10 },
+        'Large': { str: 18, dex: 8, con: 14 },
+        'Huge': { str: 26, dex: 6, con: 18 },
+        'Gargantuan': { str: 34, dex: 6, con: 22 },
+        'Colossal': { str: 42, dex: 6, con: 26 },
+    };
+
+    const sizeBaseline = sizeBaselineScores[block.size as string];
+    if (sizeBaseline) {
+        const TOLERANCE = 4;
+        const strDeviation = Math.abs((block.str || 10) - sizeBaseline.str);
+        const dexDeviation = Math.abs((block.dex || 10) - sizeBaseline.dex);
+        const conDeviation = Math.abs((block.con || 10) - sizeBaseline.con);
+
+        if (strDeviation > TOLERANCE) {
+            messages.push({
+                category: 'basics',
+                severity: 'warning',
+                message: `STR ${block.str} deviates significantly from ${block.size} baseline of ${sizeBaseline.str}. Physical scores should be "relatively close" to size-appropriate values.`,
+                expected: `~${sizeBaseline.str}`,
+                actual: block.str,
+            });
+        }
+        if (dexDeviation > TOLERANCE) {
+            messages.push({
+                category: 'basics',
+                severity: 'warning',
+                message: `DEX ${block.dex} deviates significantly from ${block.size} baseline of ${sizeBaseline.dex}. Physical scores should be "relatively close" to size-appropriate values.`,
+                expected: `~${sizeBaseline.dex}`,
+                actual: block.dex,
+            });
+        }
+        if (conDeviation > TOLERANCE) {
+            messages.push({
+                category: 'basics',
+                severity: 'note',
+                message: `CON ${block.con} deviates from ${block.size} baseline of ${sizeBaseline.con}. High CON is OK for durability; verify intentional.`,
+                expected: `~${sizeBaseline.con}`,
+                actual: block.con,
+            });
+        }
+    }
+
+    // --- 7. TEMPLATE COMPATIBILITY CHECK ---
+    // Validate that applied templates are compatible with creature type
+    // E.g., Skeleton/Zombie should not apply to already-Undead; Half-Dragon should not conflict with size
+    const template = (block as any).template;
+    const incompatibleTemplates: Record<string, string[]> = {
+        'Skeleton': ['Undead'], // don't apply Skeleton to already-Undead
+        'Zombie': ['Undead'],
+        'Lich': ['Undead'],
+        'Ghost': ['Undead'],
+    };
+
+    if (template && incompatibleTemplates[template]) {
+        const bannedTypes = incompatibleTemplates[template];
+        if (bannedTypes.includes(block.type)) {
+            messages.push({
+                category: 'basics',
+                severity: 'warning',
+                message: `Template "${template}" is typically applied to non-Undead creatures. Applying to ${block.type} (Undead type) may be redundant or contradictory.`,
+                expected: `Non-${bannedTypes[0]} creature type`,
+                actual: block.type,
+            });
+        }
+    }
+
+    // --- 8. LOWEST-SCORE CREATURE SANITY CHECK ---
+    // If creature has all 10s for physical, 1 HD, CR 1/3 or lower, ensure it makes sense (e.g., minion/commoner)
+    const allPhysicalAt10 = (block.str || 10) === 10 && (block.dex || 10) === 10 && (block.con || 10) === 10;
+    const allMentalAt10 = (block.int || 10) === 10 && (block.wis || 10) === 10 && (block.cha || 10) === 10;
+    const hasMinimalHD = (block.racialHD || 1) === 1;
+    const hasMinimalAC = (block.ac_claimed || 10) <= 10;
+    const crAsNumber = typeof block.cr === 'number' ? block.cr : parseInt(String(block.cr), 10);
+
+    if (allPhysicalAt10 && allMentalAt10 && hasMinimalHD && hasMinimalAC && (crAsNumber || 1) <= 0.33) {
+        // This is a low-threat creature (minion, commoner, etc.) — acceptable, just note it
+        messages.push({
+            category: 'basics',
+            severity: 'note',
+            message: `Creature has minimum baseline stats (all 10s, 1 HD, AC ≤10, CR ≤1/3). This is appropriate for minions, commoners, or lowest-tier threats.`,
+            expected: 'Varies',
+            actual: `All baselines`,
+        });
+    }
+
   return {
     valid: !isCritical,
     status: isCritical ? 'FAIL' : (messages.length > 0 ? 'WARN' : 'PASS'),
