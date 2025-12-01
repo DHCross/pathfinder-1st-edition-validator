@@ -10,22 +10,25 @@ import { validateBenchmarks } from '../engine/validateBenchmarks';
 import { validateEconomy } from '../engine/validateEconomy';
 
 const TEMPLATES: Record<string, Partial<PF1eStatBlock>> = {
-  'Fire Beetle': {
-    name: 'Fire Beetle',
+  'New Creature': {
+    name: 'New Creature',
     cr: '1',
     xp: 400,
-    size: 'Small',
-    type: 'Vermin',
-    racialHD: 1,
-    hp: 50,
+    size: 'Medium',
+    type: 'Humanoid',
+    racialHD: 2,
+    hp: 20,
     str: 10,
-    dex: 11,
-    con: 11,
+    dex: 10,
+    con: 14,
     ac: 12,
-    bab: 0,
+    bab: 1,
     fort: 2,
     ref: 0,
     will: 0,
+    int: 10,
+    wis: 10,
+    cha: 10,
   },
   'Chaos-Mutated Toad': {
     name: 'Chaos-Mutated Toad',
@@ -48,7 +51,7 @@ const TEMPLATES: Record<string, Partial<PF1eStatBlock>> = {
 
 export const MonsterBuilderWizard: React.FC = () => {
   const [step, setStep] = useState(1);
-  const [templateKey, setTemplateKey] = useState<string>('Fire Beetle');
+  const [templateKey, setTemplateKey] = useState<string>('New Creature');
   const [crTarget, setCrTarget] = useState<number>(1);
   const [fixMode, setFixMode] = useState<FixMode>('enforce_cr');
 

@@ -11,25 +11,23 @@ import { ValidatorDisplay } from './ValidatorDisplay';
 import { PF1eStatBlock, ValidationResult } from '../types/PF1eStatBlock';
 import './ValidatorPlayground.css';
 
-const SAMPLE_TEXT = `Fire Beetle
+const SAMPLE_TEXT = `New Creature
 CR 1
 XP 400
-N Small Vermin
-Init +0; Senses Darkvision 60 ft.; Perception +0
+N Medium Humanoid
+Init +0; Senses Perception +0
 DEFENSE
 AC 12, touch 11, flat-footed 12
-hp 50 (1d8+46)
+hp 20 (2d8+4)
 Fort +2, Ref +0, Will +0
-Immune mind-affecting effects
 OFFENSE
-Speed 30 ft., fly 30 ft. (poor)
-Melee bite +1 (1d4)
-Special Abilities Luminescence
+Speed 30 ft.
+Melee unarmed +1 (1d4)
 STATISTICS
-Str 10, Dex 11, Con 11, Int -, Wis 10, Cha 7
-Base Atk +0; CMB -1; CMD 9
-Feats None
-Treasure None`;
+Str 10, Dex 10, Con 14, Int 10, Wis 10, Cha 10
+Base Atk +1; CMB +1; CMD 12
+Feats Improved Initiative
+Treasure Standard`;
 
 export const ValidatorPlayground: React.FC = () => {
   const [rawInput, setRawInput] = useState(SAMPLE_TEXT);
