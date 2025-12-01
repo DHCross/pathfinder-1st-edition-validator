@@ -6,8 +6,9 @@ import { validateBasics } from '../src/engine/validateBasics';
 import { validateBenchmarks } from '../src/engine/validateBenchmarks';
 import { validateEconomy } from '../src/engine/validateEconomy';
 
-const filePath = path.join(process.cwd(), 'Rules/practice run/A0 Cyclopedia Pathfinder 1e (Most Recent).md');
-const reportPath = path.join(process.cwd(), 'Audit_Report_A0_Cyclopedia.md');
+// Use the user's provided test document in `Rules/Test docs`
+const filePath = path.join(process.cwd(), 'Rules/Test docs/A0 Cyclopedia Pathfinder 1e (Most Recent) (2).md');
+const reportPath = path.join(process.cwd(), 'Audit_Report_A0_Cyclopedia_TEST.md');
 
 function extractStatBlocks(content: string): string[] {
     const blocks: string[] = [];
@@ -90,7 +91,7 @@ function runAudit() {
                 ...vEcon.messages
             ];
 
-            const hasErrors = allMessages.some(m => m.severity === 'error');
+            const hasErrors = allMessages.some(m => m.severity === 'critical');
             const hasWarnings = allMessages.some(m => m.severity === 'warning');
 
             if (hasErrors || hasWarnings) {
@@ -102,7 +103,7 @@ function runAudit() {
                 if (hasErrors) {
                     console.log(`❌ ERRORS:`);
                     reportContent += `**❌ ERRORS:**\n`;
-                    allMessages.filter(m => m.severity === 'error').forEach(m => {
+                    allMessages.filter(m => m.severity === 'critical').forEach(m => {
                         console.log(`  - ${m.message}`);
                         reportContent += `- ${m.message}\n`;
                     });
