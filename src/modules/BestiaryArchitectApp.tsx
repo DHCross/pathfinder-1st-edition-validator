@@ -39,6 +39,7 @@ const progressStepStyle = (status: StepStatus): React.CSSProperties => {
     boxShadow: status === 'current' ? '0 8px 20px #312e8118' : 'none',
     cursor: 'pointer',
   };
+};
 
 const severityPalette: Record<ValidationSeverity, { icon: string; color: string; bg: string; border: string }> = {
   critical: { icon: '⛔', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
