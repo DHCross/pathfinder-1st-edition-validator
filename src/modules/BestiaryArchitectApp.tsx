@@ -1,11 +1,62 @@
 import React, { useMemo, useState } from 'react';
 import FoundationBuilder from './foundation-builder';
 import { seedPrompt } from './narrative-weaver/AtomicPrompt';
+import { calculateHP } from './mechanics-engine';
 import { validateBasics } from '../engine/validateBasics';
 import { validateBenchmarks } from '../engine/validateBenchmarks';
 import { validateEconomy } from '../engine/validateEconomy';
 import { XP_Table } from '../rules/pf1e-data-tables';
 import { PF1eStatBlock, ValidationMessage, ValidationSeverity } from '../types/PF1eStatBlock';
+
+// Creature type definitions with mechanical implications
+const CREATURE_TYPES = {
+  Aberration: { hd: 'd8', bab: 'medium', goodSaves: ['will'], skillRanks: 4, traits: 'Bizarre anatomy' },
+  Animal: { hd: 'd8', bab: 'medium', goodSaves: ['fort', 'ref'], skillRanks: 2, traits: 'Low-light vision, scent' },
+  Construct: { hd: 'd10', bab: 'fast', goodSaves: [], skillRanks: 2, traits: 'Immune to mind-affecting, poison, death effects' },
+  Dragon: { hd: 'd12', bab: 'fast', goodSaves: ['fort', 'ref', 'will'], skillRanks: 6, traits: 'Immune to sleep, paralysis' },
+  Fey: { hd: 'd6', bab: 'slow', goodSaves: ['ref', 'will'], skillRanks: 6, traits: 'Often forest/underground' },
+  Humanoid: { hd: 'd8', bab: 'medium', goodSaves: ['any'], skillRanks: 2, traits: 'Breathe, eat, sleep' },
+  'Magical Beast': { hd: 'd10', bab: 'fast', goodSaves: ['fort', 'ref'], skillRanks: 2, traits: 'Darkvision, low-light vision' },
+  'Monstrous Humanoid': { hd: 'd10', bab: 'fast', goodSaves: ['ref', 'will'], skillRanks: 4, traits: 'Darkvision, monstrous features' },
+  Ooze: { hd: 'd8', bab: 'medium', goodSaves: [], skillRanks: 2, traits: 'Mindless, immune to precision damage' },
+  Outsider: { hd: 'd10', bab: 'fast', goodSaves: ['any', 'any'], skillRanks: 6, traits: 'From other planes' },
+  Plant: { hd: 'd8', bab: 'medium', goodSaves: ['fort'], skillRanks: 2, traits: 'Immune to mind-affecting, sleep, poison' },
+  Undead: { hd: 'd8', bab: 'medium', goodSaves: ['will'], skillRanks: 4, traits: 'Immune to critical hits, poison, death effects' },
+  Vermin: { hd: 'd8', bab: 'medium', goodSaves: ['fort'], skillRanks: 2, traits: 'Mindless, immune to mind-affecting' },
+} as const;
+
+type CreatureTypeKey = keyof typeof CREATURE_TYPES;
+
+const calculateBAB = (hd: number, progression: 'slow' | 'medium' | 'fast'): number => {
+  if (progression === 'slow') return Math.floor(hd / 2);
+  if (progression === 'medium') return Math.floor((hd * 3) / 4);
+  return hd; // fast
+};
+
+const PRESETS = {
+  NastyBeast: {
+    name: 'NastyBeast',
+    targetCR: 1,
+    creatureType: 'Monstrous Humanoid',
+    hd: 2,
+    str: 14,
+    dex: 12,
+    con: 14,
+    int: 10,
+    wis: 10,
+    cha: 10,
+    ac: 12,
+    bab: 2,
+    fort: 2,
+    ref: 2,
+    will: 0,
+    selectedFeat: 'Power Attack',
+    role: 'Villain',
+    motivation: 'power',
+    treasureType: 'Standard',
+    buildPath: 'Monster' as const,
+  },
+} as const;
 
 const MODULES = [
   'Foundation',
@@ -85,7 +136,20 @@ const categoryActionConfig: Record<string, RuleActionHintConfig> = {
 export type ArchitectState = {
   name: string;
   targetCR: number;
+  creatureType: CreatureTypeKey;
   hd: number;
+  str: number;
+  dex: number;
+  con: number;
+  int: number;
+  wis: number;
+  cha: number;
+  ac: number;
+  bab: number;
+  fort: number;
+  ref: number;
+  will: number;
+  selectedFeat: string;
   role: string;
   motivation: string;
   treasureType: string;
@@ -95,11 +159,29 @@ export type ArchitectState = {
 const initialState: ArchitectState = {
   name: 'New Creature',
   targetCR: 1,
-  hd: 1,
+  creatureType: 'Humanoid',
+  hd: 2,
+  str: 10,
+  dex: 10,
+  con: 14,
+  int: 10,
+  wis: 10,
+  cha: 10,
+  ac: 12,
+  bab: 1,
+  fort: 2,
+  ref: 0,
+  will: 0,
+  selectedFeat: 'Improved Initiative',
   role: 'Villain',
   motivation: 'power',
   treasureType: 'Standard',
   buildPath: 'Monster',
+};
+
+const calculateFeatCount = (hd: number, int: number): number => {
+  if (int <= 0) return 0;
+  return 1 + Math.floor((hd - 1) / 2);
 };
 
 const pillButtonStyle = (active: boolean): React.CSSProperties => ({
@@ -118,34 +200,43 @@ export const BestiaryArchitectApp: React.FC = () => {
   const [step, setStep] = useState(0);
   const [state, setState] = useState(initialState);
 
+  const nextLabel = step < MODULES.length - 1 ? `Next: ${MODULES[step + 1]}` : 'Finish';
+  const prevLabel = step === 0 ? 'Back' : `Back to ${MODULES[step - 1]}`;
+  const derivedHP = calculateHP(state.hd, state.con);
+  const featCount = calculateFeatCount(state.hd, state.int);
+  
+  const typeInfo = CREATURE_TYPES[state.creatureType];
+  const suggestedBAB = calculateBAB(state.hd, typeInfo.bab);
+  const babMismatch = state.bab !== suggestedBAB;
+
   const validationBlock: PF1eStatBlock = useMemo(() => ({
     name: state.name || 'Creature',
     cr: state.targetCR.toString() as any,
     xp: XP_Table[state.targetCR.toString()] || 0,
     size: 'Medium',
-    type: 'Animal',
+    type: state.creatureType,
     racialHD: state.hd,
-    hp: Math.max(1, state.hd * 8),
-    hp_claimed: Math.max(1, state.hd * 8),
-    ac: 10,
-    ac_claimed: 10,
-    fort: 0,
-    ref: 0,
-    will: 0,
-    fort_save_claimed: 0,
-    ref_save_claimed: 0,
-    will_save_claimed: 0,
-    bab: 0,
-    bab_claimed: 0,
-    str: 10,
-    dex: 10,
-    con: 10,
-    int: 10,
-    wis: 10,
-    cha: 10,
-    feats: [],
+    hp: calculateHP(state.hd, state.con),
+    hp_claimed: calculateHP(state.hd, state.con),
+    ac: state.ac,
+    ac_claimed: state.ac,
+    fort: state.fort,
+    ref: state.ref,
+    will: state.will,
+    fort_save_claimed: state.fort,
+    ref_save_claimed: state.ref,
+    will_save_claimed: state.will,
+    bab: state.bab,
+    bab_claimed: state.bab,
+    str: state.str,
+    dex: state.dex,
+    con: state.con,
+    int: state.int,
+    wis: state.wis,
+    cha: state.cha,
+    feats: Array.from({ length: featCount }, (_, i) => state.selectedFeat || `Feat ${i + 1}`),
     treasureType: state.treasureType as any,
-  }), [state.hd, state.name, state.targetCR, state.treasureType]);
+  }), [state.hd, state.name, state.targetCR, state.treasureType, state.creatureType, state.str, state.dex, state.con, state.int, state.wis, state.cha, state.ac, state.bab, state.fort, state.ref, state.will, state.selectedFeat, featCount]);
 
   const basicsCheck = useMemo(() => validateBasics(validationBlock), [validationBlock]);
   const benchmarkCheck = useMemo(() => validateBenchmarks(validationBlock), [validationBlock]);
@@ -182,25 +273,27 @@ export const BestiaryArchitectApp: React.FC = () => {
     return true;
   }, [state.name, step]);
 
-  const nextLabel = step < MODULES.length - 1 ? `Next: ${MODULES[step + 1]}` : 'Finish';
-  const prevLabel = step === 0 ? 'Back' : `Back to ${MODULES[step - 1]}`;
-  const derivedHP = Math.max(1, state.hd * 8);
-
   const snapshotTags = useMemo(
     () => [
       { label: `CR ${state.targetCR}`, tone: '#312e81' },
-      { label: state.buildPath, tone: '#0f766e' },
+      { label: state.creatureType, tone: '#0f766e' },
+      { label: state.buildPath, tone: '#7c2d12' },
       { label: state.role || 'Role TBD', tone: '#9a3412' },
       { label: state.treasureType || 'Treasure TBD', tone: '#1d4ed8' },
       { label: `Rules: ${overallRulesStatus}`, tone: pillToneForStatus(overallRulesStatus) },
     ],
-    [overallRulesStatus, state.buildPath, state.role, state.targetCR, state.treasureType],
+    [overallRulesStatus, state.buildPath, state.creatureType, state.role, state.targetCR, state.treasureType],
   );
 
   const handleRuleNavigation = (targetStep?: number) => {
     if (typeof targetStep === 'number') {
       setStep(targetStep);
     }
+  };
+
+  const loadPreset = (presetName: 'NastyBeast') => {
+    const preset = PRESETS[presetName];
+    setState(preset);
   };
 
   const runQuickFix = (key: QuickFixKey) => {
@@ -283,10 +376,27 @@ export const BestiaryArchitectApp: React.FC = () => {
                   <FoundationBuilder
                     name={state.name}
                     targetCR={state.targetCR}
+                    creatureType={state.creatureType}
+                    hd={state.hd}
+                    str={state.str}
+                    dex={state.dex}
+                    con={state.con}
+                    int={state.int}
+                    wis={state.wis}
+                    cha={state.cha}
                     buildPath={state.buildPath}
                     onNameChange={name => setState(s => ({ ...s, name }))}
                     onTargetCRChange={targetCR => setState(s => ({ ...s, targetCR }))}
+                    onCreatureTypeChange={creatureType => setState(s => ({ ...s, creatureType: creatureType as CreatureTypeKey }))}
+                    onHdChange={hd => setState(s => ({ ...s, hd }))}
+                    onStrChange={str => setState(s => ({ ...s, str }))}
+                    onDexChange={dex => setState(s => ({ ...s, dex }))}
+                    onConChange={con => setState(s => ({ ...s, con }))}
+                    onIntChange={int => setState(s => ({ ...s, int }))}
+                    onWisChange={wis => setState(s => ({ ...s, wis }))}
+                    onChaChange={cha => setState(s => ({ ...s, cha }))}
                     onBuildPathChange={buildPath => setState(s => ({ ...s, buildPath }))}
+                    onLoadPreset={loadPreset}
                   />
                   {structuralMessages.length > 0 && (
                     <div style={{ border: '1px solid #f59e0b', background: '#fffbeb', borderRadius: 10, padding: 12 }}>
@@ -312,20 +422,126 @@ export const BestiaryArchitectApp: React.FC = () => {
               {step === 1 && (
                 <div style={{ display: 'grid', gap: 12 }}>
                   <h2 style={{ margin: 0 }}>Mechanics Engine</h2>
-                  <p style={{ margin: 0, color: '#4b5563' }}>Tune hit dice and see quick math.</p>
+                  <p style={{ margin: 0, color: '#4b5563' }}>Align stats to your creature type. Tune AC, refine BAB, select feats, and verify synergy.</p>
                   <div style={{ display: 'grid', gap: 10 }}>
-                    <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
-                      Hit Dice
-                      <input
-                        type="number"
-                        value={state.hd}
-                        min={1}
-                        max={20}
-                        onChange={e => setState(s => ({ ...s, hd: Number(e.target.value) }))}
-                        style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14 }}
-                      />
-                    </label>
-                    <div style={{ color: '#111827', fontWeight: 600 }}>Calculated HP: <span style={{ color: '#4338ca' }}>{state.hd * 8}</span> (placeholder)</div>
+                    <div style={{ background: '#f0f9ff', border: '1px solid #38bdf8', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontWeight: 700, color: '#0369a1', marginBottom: 6 }}>Type: {state.creatureType}</div>
+                      <div style={{ fontSize: 13, color: '#0c4a6e' }}>
+                        <strong>Expected Mechanics:</strong> {typeInfo.hd} HD, {typeInfo.bab} BAB progression (suggested +{suggestedBAB}), good saves: {typeInfo.goodSaves.join(', ') || 'none'}, {typeInfo.skillRanks} skill ranks/HD.
+                      </div>
+                    </div>
+                    {babMismatch && (
+                      <div style={{ border: '1px solid #7c3aed', background: '#f5f3ff', borderRadius: 10, padding: 12 }}>
+                        <div style={{ fontWeight: 700, color: '#5b21b6', marginBottom: 6 }}>Type-Based BAB Suggestion</div>
+                        <div style={{ color: '#6b21a8', marginBottom: 8 }}>
+                          Your {state.creatureType} with {state.hd} HD uses <strong>{typeInfo.bab} progression</strong>, suggesting a BAB of <strong>+{suggestedBAB}</strong>. Current BAB: <strong>+{state.bab}</strong>.
+                        </div>
+                        <button
+                          onClick={() => setState(s => ({ ...s, bab: suggestedBAB }))}
+                          style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #a78bfa', background: '#ede9fe', color: '#5b21b6', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Apply Suggested BAB
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
+                      <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
+                        AC Base
+                        <input
+                          type="number"
+                          min={10}
+                          max={50}
+                          value={10 + Math.floor((state.dex - 10) / 2)} // base 10 + dex mod
+                          readOnly
+                          style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14, background: '#f9fafb' }}
+                        />
+                      </label>
+                      <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
+                        AC Total
+                        <input
+                          type="number"
+                          min={10}
+                          max={50}
+                          value={state.ac}
+                          onChange={e => setState(s => ({ ...s, ac: Number(e.target.value) }))}
+                          style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14 }}
+                        />
+                      </label>
+                      <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
+                        BAB
+                        <input
+                          type="number"
+                          min={0}
+                          max={20}
+                          value={state.bab}
+                          onChange={e => setState(s => ({ ...s, bab: Number(e.target.value) }))}
+                          style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14 }}
+                        />
+                      </label>
+                    </div>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      <div style={{ fontWeight: 700 }}>Saving Throws</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 10 }}>
+                        <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
+                          Fort
+                          <input
+                            type="number"
+                            value={state.fort}
+                            onChange={e => setState(s => ({ ...s, fort: Number(e.target.value) }))}
+                            style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 14 }}
+                          />
+                        </label>
+                        <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
+                          Ref
+                          <input
+                            type="number"
+                            value={state.ref}
+                            onChange={e => setState(s => ({ ...s, ref: Number(e.target.value) }))}
+                            style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 14 }}
+                          />
+                        </label>
+                        <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
+                          Will
+                          <input
+                            type="number"
+                            value={state.will}
+                            onChange={e => setState(s => ({ ...s, will: Number(e.target.value) }))}
+                            style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 14 }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      <div style={{ fontWeight: 700 }}>Feat Selection ({featCount})</div>
+                      <select
+                        value={state.selectedFeat}
+                        onChange={e => setState(s => ({ ...s, selectedFeat: e.target.value }))}
+                        style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 14 }}
+                      >
+                        <option value="Improved Initiative">Improved Initiative (Villain: Act first in combat)</option>
+                        <option value="Power Attack">Power Attack (Melee: Trade accuracy for damage)</option>
+                        <option value="Toughness">Toughness (Survivability: +3 HP for 1 HD)</option>
+                        <option value="Weapon Focus">Weapon Focus (Melee: +1 on one attack type)</option>
+                        <option value="Combat Reflexes">Combat Reflexes (Tactics: Extra AoO per round)</option>
+                        <option value="Dodge">Dodge (Defense: +1 AC vs. one opponent)</option>
+                      </select>
+                      <div style={{ fontSize: 12, color: '#475569', fontStyle: 'italic' }}>
+                        {state.selectedFeat === 'Improved Initiative'
+                          ? '✓ Villain synergy: Act before enemies to control encounter.'
+                          : state.selectedFeat === 'Power Attack'
+                            ? '✓ Offensive: Boost damage at the cost of accuracy. Pairs well with high BAB or STR.'
+                            : state.selectedFeat === 'Toughness'
+                              ? '✓ Durability: Gain +3 HP to stay in the fight longer.'
+                              : state.selectedFeat === 'Weapon Focus'
+                                ? '✓ Accuracy: +1 on attack rolls with one weapon type. Great for low-BAB creatures.'
+                                : state.selectedFeat === 'Combat Reflexes'
+                                  ? '✓ Tactics: Make extra attacks of opportunity each round. Synergizes with DEX.'
+                                  : state.selectedFeat === 'Dodge'
+                                    ? '✓ Defense: Gain +1 AC against one foe per round. Stacks with other AC bonuses.'
+                                    : 'Choose a feat to see synergy guidance.'}
+                      </div>
+                    </div>
+                    <div style={{ color: '#111827', fontWeight: 600 }}>Calculated HP: <span style={{ color: '#4338ca' }}>{derivedHP}</span> (based on HD and CON)</div>
                     {structuralMessages.length > 0 && (
                       <div style={{ border: '1px solid #f59e0b', background: '#fffbeb', borderRadius: 10, padding: 12 }}>
                         <div style={{ fontWeight: 700, color: '#b45309', marginBottom: 6 }}>Rules Lawyer: Structural mismatch</div>
@@ -462,11 +678,18 @@ export const BestiaryArchitectApp: React.FC = () => {
               </div>
               <div style={{ marginTop: 10, padding: '10px 12px', background: '#ffffff', border: '1px dashed #e5e7eb', borderRadius: 10, display: 'grid', gap: 6, color: '#111827' }}>
                 <div style={{ fontWeight: 700 }}>Quick Stats</div>
+                <div style={{ fontSize: 12, color: '#475569', fontStyle: 'italic', marginBottom: 6 }}>
+                  <strong>{state.creatureType}</strong> | {typeInfo.hd} HD | {typeInfo.bab} BAB | {typeInfo.skillRanks} skill ranks/HD
+                </div>
                 <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-                  <div><strong>HD:</strong> {state.hd}d8</div>
+                  <div><strong>HD:</strong> {state.hd}d{typeInfo.hd.slice(1)}</div>
                   <div><strong>HP (est):</strong> {derivedHP}</div>
-                  <div><strong>AC (placeholder):</strong> 10</div>
-                  <div><strong>Saves (placeholder):</strong> Fort 0 / Ref 0 / Will 0</div>
+                  <div><strong>AC:</strong> {state.ac}</div>
+                  <div><strong>BAB:</strong> +{state.bab} {babMismatch ? `(type suggests +${suggestedBAB})` : '✓'}</div>
+                  <div><strong>Saves:</strong> Fort +{state.fort} / Ref +{state.ref} / Will +{state.will}</div>
+                  <div><strong>STR/DEX/CON:</strong> {state.str}/{state.dex}/{state.con}</div>
+                  <div><strong>INT/WIS/CHA:</strong> {state.int}/{state.wis}/{state.cha}</div>
+                  <div><strong>Feat:</strong> {state.selectedFeat}</div>
                 </div>
               </div>
 
@@ -572,7 +795,7 @@ export const BestiaryArchitectApp: React.FC = () => {
           <footer style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
             <div style={{ color: '#475569', fontSize: 13, fontWeight: 500 }}>
               {step === 0 && 'Complete the foundation card, then jump into Mechanics.'}
-              {step === 1 && 'Dial in stats before moving to Narrative flair.'}
+              {step === 1 && 'Review mechanics and add special abilities.'}
               {step === 2 && 'Capture story hooks, then define treasure.'}
               {step === 3 && 'Lock in loot or revisit earlier steps as needed.'}
             </div>

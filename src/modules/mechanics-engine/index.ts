@@ -1,6 +1,7 @@
 export * from './types';
 
-// Placeholder: basic API surface for the engine
-export function calculateHP(hd: number, conMod: number) {
-  return Math.max(1, (Math.ceil(hd) * (Math.max(1, (Math.ceil(hd)) ) + 0)) );
+// Calculate HP based on HD and Constitution modifier
+export function calculateHP(hd: number, con: number) {
+  const conMod = Math.floor((con - 10) / 2);
+  return Math.max(1, hd * (8 + conMod));
 }
