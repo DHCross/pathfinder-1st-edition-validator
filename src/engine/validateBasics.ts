@@ -133,6 +133,19 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
         }); 
   }
 
+    // --- 4. TYPE-HITDIE SANITY CHECK ---
+    // Warn if type's hit die is smaller than d6 (uncommon for monsters; usually d4 is not used for racial HD)
+    const typeRule = CreatureTypeRules[block.type as any];
+    if (typeRule && typeof typeRule.hitDieType === 'number' && typeRule.hitDieType < 6) {
+        messages.push({
+            category: 'basics',
+            severity: 'warning',
+            message: `Nonstandard Hit Die: ${block.type} is mapped to d${typeRule.hitDieType} HD which is below the conventional minimum of d6 for monster racial HD. d4 is usually reserved for damage dice, not racial HD.`,
+            expected: 'd6+',
+            actual: `d${typeRule.hitDieType}`,
+        });
+    }
+
   return {
     valid: !isCritical,
     status: isCritical ? 'FAIL' : (messages.length > 0 ? 'WARN' : 'PASS'),

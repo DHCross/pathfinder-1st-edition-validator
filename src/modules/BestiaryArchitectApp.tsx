@@ -6,7 +6,7 @@ import { validateBasics } from '../engine/validateBasics';
 import { validateBenchmarks } from '../engine/validateBenchmarks';
 import { validateEconomy } from '../engine/validateEconomy';
 import { XP_Table } from '../rules/pf1e-data-tables';
-import { PF1eStatBlock, ValidationMessage, ValidationSeverity } from '../types/PF1eStatBlock';
+import { PF1eStatBlock, ValidationSeverity } from '../types/PF1eStatBlock';
 
 // Creature type definitions with mechanical implications
 const CREATURE_TYPES = {
@@ -55,8 +55,45 @@ const PRESETS = {
     motivation: 'power',
     treasureType: 'Standard',
     buildPath: 'Monster' as const,
+    size: 'Medium' as const,
+    alignment: 'Neutral' as const,
+  },
+  LowestScores: {
+    name: 'LowestScores',
+    targetCR: 1,
+    creatureType: 'Humanoid',
+    hd: 1,
+    str: 10,
+    dex: 10,
+    con: 10,
+    int: 10,
+    wis: 10,
+    cha: 10,
+    ac: 10,
+    bab: 0,
+    fort: 0,
+    ref: 0,
+    will: 0,
+    selectedFeat: '',
+    role: 'Minion',
+    motivation: 'survive',
+    treasureType: 'None',
+    buildPath: 'Monster' as const,
+    size: 'Medium' as const,
+    alignment: 'Neutral' as const,
+    template: null,
   },
 } as const;
+
+const suggestionForAlignment = (role: string, motivation: string) => {
+    if (role === 'Villain' && motivation === 'power') {
+      return { suggested: 'Evil', info: 'Villain + Power strongly suggests an Evil alignment (Lawful, Neutral, or Chaotic Evil depending on the approach).', example: 'LE / NE / CE' };
+    }
+    if (role === 'Villain') {
+      return { suggested: 'Likely Evil', info: 'Villain role often suggests malevolent intent and alignment leaning evil.' };
+    }
+    return { suggested: 'Varies', info: 'Role and motivation do not strongly imply a specific alignment.' };
+    };
 
 const MODULES = [
   'Foundation',
@@ -137,7 +174,9 @@ export type ArchitectState = {
   name: string;
   targetCR: number;
   creatureType: CreatureTypeKey;
+  size: 'Tiny'|'Small'|'Medium'|'Large'|'Huge'|'Gargantuan';
   hd: number;
+  hdDie?: 'd6'|'d8'|'d10'|'d12';
   str: number;
   dex: number;
   con: number;
@@ -149,10 +188,12 @@ export type ArchitectState = {
   fort: number;
   ref: number;
   will: number;
+  template?: string | null;
   selectedFeat: string;
   role: string;
   motivation: string;
   treasureType: string;
+  alignment: string;
   buildPath: 'Monster' | 'NPC' | 'From-Scratch';
 };
 
@@ -160,7 +201,9 @@ const initialState: ArchitectState = {
   name: 'New Creature',
   targetCR: 1,
   creatureType: 'Humanoid',
+  size: 'Medium',
   hd: 2,
+  hdDie: 'd8',
   str: 10,
   dex: 10,
   con: 14,
@@ -176,7 +219,9 @@ const initialState: ArchitectState = {
   role: 'Villain',
   motivation: 'power',
   treasureType: 'Standard',
+  alignment: 'Neutral',
   buildPath: 'Monster',
+  template: null,
 };
 
 const calculateFeatCount = (hd: number, int: number): number => {
@@ -200,6 +245,35 @@ export const BestiaryArchitectApp: React.FC = () => {
   const [step, setStep] = useState(0);
   const [state, setState] = useState(initialState);
 
+  const TEMPLATES: Record<string, (s: ArchitectState) => Partial<ArchitectState>> = {
+    None: () => ({ template: null }),
+    'Advanced Creature': s => ({ template: 'Advanced Creature', targetCR: Math.min(25, s.targetCR + 1), str: s.str + 4, dex: s.dex + 4, con: s.con + 4, int: Math.max(s.int, 3) + 4, wis: s.wis + 4, cha: s.cha + 4, ac: s.ac + 4 }),
+    'Giant Creature': s => ({ template: 'Giant Creature', targetCR: Math.min(25, s.targetCR + 1), str: s.str + 4, con: s.con + 4, dex: Math.max(1, s.dex - 2), ac: s.ac + 3 }),
+    'Young Creature': s => ({ template: 'Young Creature', targetCR: Math.max(1, s.targetCR - 1), str: Math.max(1, s.str - 4), con: Math.max(1, s.con - 4), dex: s.dex + 4, ac: Math.max(0, s.ac - 2) }),
+    'Celestial Creature': s => ({ template: 'Celestial Creature', targetCR: s.hd >= 5 ? Math.min(25, s.targetCR + 1) : s.targetCR, ac: s.ac + 0 }),
+    'Fiendish Creature': s => ({ template: 'Fiendish Creature', targetCR: s.hd >= 5 ? Math.min(25, s.targetCR + 1) : s.targetCR, ac: s.ac + 0 }),
+    Skeleton: s => ({ template: 'Skeleton', creatureType: 'Undead', targetCR: s.targetCR, hd: s.hd, str: s.str, dex: s.dex, con: s.con, cha: s.cha, ac: s.ac + 2 }),
+    Zombie: s => ({ template: 'Zombie', creatureType: 'Undead', targetCR: s.targetCR, ac: s.ac }),
+    'Half-Dragon': s => ({ template: 'Half-Dragon', str: s.str + 8, con: s.con + 6, int: s.int + 2, cha: s.cha + 2 }),
+    'Half-Fiend': s => ({ template: 'Half-Fiend', str: s.str + 2, con: s.con + 2, int: s.int + 2, cha: s.cha + 2 }),
+    Lich: s => ({ template: 'Lich', creatureType: 'Undead', targetCR: Math.min(25, s.targetCR + 2) }),
+    Ghost: s => ({ template: 'Ghost', creatureType: 'Undead', targetCR: Math.min(25, s.targetCR + 1) }),
+  };
+
+  const applyTemplate = (templateName: string) => {
+    const op = TEMPLATES[templateName];
+    if (!op) return;
+    setState(s => {
+      const changes = op(s);
+      // Apply template changes in the recommended sequence: size -> ability adjustments -> HP/feats/derived stats (HP/featcalc recomputed via derived values)
+      const updated = { ...s, ...changes } as ArchitectState;
+      // Recompute callback values where we have explicit derived fields (bab may need to be adapted later)
+      updated.bab = calculateBAB(updated.hd, CREATURE_TYPES[updated.creatureType].bab as any);
+      // Ensure derived hp/feats will update through existing calculation on render
+      return updated;
+    });
+  };
+
   const nextLabel = step < MODULES.length - 1 ? `Next: ${MODULES[step + 1]}` : 'Finish';
   const prevLabel = step === 0 ? 'Back' : `Back to ${MODULES[step - 1]}`;
   const derivedHP = calculateHP(state.hd, state.con);
@@ -213,7 +287,7 @@ export const BestiaryArchitectApp: React.FC = () => {
     name: state.name || 'Creature',
     cr: state.targetCR.toString() as any,
     xp: XP_Table[state.targetCR.toString()] || 0,
-    size: 'Medium',
+    size: state.size,
     type: state.creatureType,
     racialHD: state.hd,
     hp: calculateHP(state.hd, state.con),
@@ -276,10 +350,12 @@ export const BestiaryArchitectApp: React.FC = () => {
   const snapshotTags = useMemo(
     () => [
       { label: `CR ${state.targetCR}`, tone: '#312e81' },
+      { label: `${state.size}`, tone: '#0f766e' },
       { label: state.creatureType, tone: '#0f766e' },
       { label: state.buildPath, tone: '#7c2d12' },
       { label: state.role || 'Role TBD', tone: '#9a3412' },
       { label: state.treasureType || 'Treasure TBD', tone: '#1d4ed8' },
+      { label: `Align: ${state.alignment}`, tone: '#a21caf' },
       { label: `Rules: ${overallRulesStatus}`, tone: pillToneForStatus(overallRulesStatus) },
     ],
     [overallRulesStatus, state.buildPath, state.creatureType, state.role, state.targetCR, state.treasureType],
@@ -291,10 +367,10 @@ export const BestiaryArchitectApp: React.FC = () => {
     }
   };
 
-  const loadPreset = (presetName: 'NastyBeast') => {
-    const preset = PRESETS[presetName];
-    setState(preset);
-  };
+  const loadPreset = (presetName: 'NastyBeast' | 'LowestScores') => {
+      const preset = PRESETS[presetName];
+      setState(s => ({ ...s, ...preset } as ArchitectState));
+    };
 
   const runQuickFix = (key: QuickFixKey) => {
     switch (key) {
@@ -377,6 +453,7 @@ export const BestiaryArchitectApp: React.FC = () => {
                     name={state.name}
                     targetCR={state.targetCR}
                     creatureType={state.creatureType}
+                    size={state.size}
                     hd={state.hd}
                     str={state.str}
                     dex={state.dex}
@@ -389,14 +466,20 @@ export const BestiaryArchitectApp: React.FC = () => {
                     onTargetCRChange={targetCR => setState(s => ({ ...s, targetCR }))}
                     onCreatureTypeChange={creatureType => setState(s => ({ ...s, creatureType: creatureType as CreatureTypeKey }))}
                     onHdChange={hd => setState(s => ({ ...s, hd }))}
-                    onStrChange={str => setState(s => ({ ...s, str }))}
-                    onDexChange={dex => setState(s => ({ ...s, dex }))}
-                    onConChange={con => setState(s => ({ ...s, con }))}
+                    hdDie={state.hdDie}
+                    onHdDieChange={hdDie => setState(s => ({ ...s, hdDie }))}
+                    onStrChange={str => { console.debug('[BestiaryArchitectApp] onStrChange ->', str); setState(s => ({ ...s, str })); }}
+                    onDexChange={dex => { console.debug('[BestiaryArchitectApp] onDexChange ->', dex); setState(s => ({ ...s, dex })); }}
+                    onConChange={con => { console.debug('[BestiaryArchitectApp] onConChange ->', con); setState(s => ({ ...s, con })); }}
                     onIntChange={int => setState(s => ({ ...s, int }))}
                     onWisChange={wis => setState(s => ({ ...s, wis }))}
                     onChaChange={cha => setState(s => ({ ...s, cha }))}
                     onBuildPathChange={buildPath => setState(s => ({ ...s, buildPath }))}
                     onLoadPreset={loadPreset}
+                    onApplyTemplate={applyTemplate}
+                    template={state.template}
+                    onTemplateChange={next => setState(s => ({ ...s, template: next }))}
+                    onSizeChange={size => setState(s => ({ ...s, size }))}
                   />
                   {structuralMessages.length > 0 && (
                     <div style={{ border: '1px solid #f59e0b', background: '#fffbeb', borderRadius: 10, padding: 12 }}>
@@ -426,9 +509,9 @@ export const BestiaryArchitectApp: React.FC = () => {
                   <div style={{ display: 'grid', gap: 10 }}>
                     <div style={{ background: '#f0f9ff', border: '1px solid #38bdf8', borderRadius: 10, padding: 12 }}>
                       <div style={{ fontWeight: 700, color: '#0369a1', marginBottom: 6 }}>Type: {state.creatureType}</div>
-                      <div style={{ fontSize: 13, color: '#0c4a6e' }}>
-                        <strong>Expected Mechanics:</strong> {typeInfo.hd} HD, {typeInfo.bab} BAB progression (suggested +{suggestedBAB}), good saves: {typeInfo.goodSaves.join(', ') || 'none'}, {typeInfo.skillRanks} skill ranks/HD.
-                      </div>
+                        <div style={{ fontSize: 13, color: '#0c4a6e' }}>
+                          <strong>Expected Mechanics:</strong> {state.hdDie || typeInfo.hd} HD, {typeInfo.bab} BAB progression (suggested +{suggestedBAB}), good saves: {typeInfo.goodSaves.join(', ') || 'none'}, {typeInfo.skillRanks} skill ranks/HD.
+                        </div>
                     </div>
                     {babMismatch && (
                       <div style={{ border: '1px solid #7c3aed', background: '#f5f3ff', borderRadius: 10, padding: 12 }}>
@@ -598,6 +681,37 @@ export const BestiaryArchitectApp: React.FC = () => {
                       style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14 }}
                     />
                   </label>
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    <label style={{ display: 'grid', gap: 6, fontWeight: 600 }}>
+                      Alignment
+                      <select
+                        value={state.alignment}
+                        onChange={e => setState(s => ({ ...s, alignment: e.target.value }))}
+                        style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14 }}
+                      >
+                        <option>Lawful Good</option>
+                        <option>Neutral Good</option>
+                        <option>Chaotic Good</option>
+                        <option>Lawful Neutral</option>
+                        <option>Neutral</option>
+                        <option>Chaotic Neutral</option>
+                        <option>Lawful Evil</option>
+                        <option>Neutral Evil</option>
+                        <option>Chaotic Evil</option>
+                      </select>
+                    </label>
+                    <div style={{ fontSize: 13, color: '#475569' }}>
+                      <strong>Suggested Alignment:</strong> {suggestionForAlignment(state.role, state.motivation).suggested} — {suggestionForAlignment(state.role, state.motivation).info}
+                      <div style={{ marginTop: 6 }}>
+                        <button
+                          onClick={() => setState(s => ({ ...s, alignment: suggestionForAlignment(s.role, s.motivation).suggested === 'Evil' ? 'Neutral Evil' : suggestionForAlignment(s.role, s.motivation).suggested }))}
+                          style={{ marginTop: 6, padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5f5', background: '#fff', cursor: 'pointer' }}
+                        >
+                          Apply Suggested Alignment
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <div style={{ background: '#f5f3ff', border: '1px solid #e0e7ff', padding: 12, borderRadius: 10, color: '#312e81' }}>
                     <div style={{ fontWeight: 700, marginBottom: 4 }}>Prompt starter</div>
                     <div style={{ fontStyle: 'italic', lineHeight: 1.5 }}>
@@ -679,10 +793,11 @@ export const BestiaryArchitectApp: React.FC = () => {
               <div style={{ marginTop: 10, padding: '10px 12px', background: '#ffffff', border: '1px dashed #e5e7eb', borderRadius: 10, display: 'grid', gap: 6, color: '#111827' }}>
                 <div style={{ fontWeight: 700 }}>Quick Stats</div>
                 <div style={{ fontSize: 12, color: '#475569', fontStyle: 'italic', marginBottom: 6 }}>
-                  <strong>{state.creatureType}</strong> | {typeInfo.hd} HD | {typeInfo.bab} BAB | {typeInfo.skillRanks} skill ranks/HD
+                  <strong>{state.creatureType}</strong> | {state.hdDie || typeInfo.hd} HD | {typeInfo.bab} BAB | {typeInfo.skillRanks} skill ranks/HD
                 </div>
                 <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-                  <div><strong>HD:</strong> {state.hd}d{typeInfo.hd.slice(1)}</div>
+                  <div><strong>HD:</strong> {state.hd}{state.hdDie ? ` ${state.hdDie}` : `d${typeInfo.hd.slice(1)}`}</div>
+                  <div><strong>Size:</strong> {state.size}</div>
                   <div><strong>HP (est):</strong> {derivedHP}</div>
                   <div><strong>AC:</strong> {state.ac}</div>
                   <div><strong>BAB:</strong> +{state.bab} {babMismatch ? `(type suggests +${suggestedBAB})` : '✓'}</div>
@@ -690,6 +805,7 @@ export const BestiaryArchitectApp: React.FC = () => {
                   <div><strong>STR/DEX/CON:</strong> {state.str}/{state.dex}/{state.con}</div>
                   <div><strong>INT/WIS/CHA:</strong> {state.int}/{state.wis}/{state.cha}</div>
                   <div><strong>Feat:</strong> {state.selectedFeat}</div>
+                  <div><strong>Alignment:</strong> {state.alignment}</div>
                 </div>
               </div>
 
