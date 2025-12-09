@@ -1,1 +1,0 @@
-import{R as b}from"./iframe-C8eKvDVR.js";const u=({primary:t=!1,size:o="medium",backgroundColor:e,label:n,...r})=>{const s=t?"storybook-button--primary":"storybook-button--secondary";return b.createElement("button",{type:"button",className:["storybook-button",`storybook-button--${o}`,s].join(" "),style:{backgroundColor:e},...r},n)};export{u as B};
