@@ -5,8 +5,9 @@ import { calculateHP } from './mechanics-engine';
 import { validateBasics } from '../engine/validateBasics';
 import { validateBenchmarks } from '../engine/validateBenchmarks';
 import { validateEconomy } from '../engine/validateEconomy';
-import { XP_Table } from '../rules/pf1e-data-tables';
+import { CreatureTypeRules, SaveName, SizeConstants, XP_Table } from '../rules/pf1e-data-tables';
 import { PF1eStatBlock, ValidationSeverity } from '../types/PF1eStatBlock';
+import { getBenchmarksForCR, estimateHDFromBenchmarks } from '../lib/benchmarkUtils';
 
 // Creature type definitions with mechanical implications
 const CREATURE_TYPES = {
@@ -31,6 +32,50 @@ const calculateBAB = (hd: number, progression: 'slow' | 'medium' | 'fast'): numb
   if (progression === 'slow') return Math.floor(hd / 2);
   if (progression === 'medium') return Math.floor((hd * 3) / 4);
   return hd; // fast
+};
+
+const abilityMod = (score: number): number => Math.floor((score - 10) / 2);
+
+const computeSaveTarget = (state: ArchitectState, save: SaveName): number => {
+  const typeRule = CreatureTypeRules[state.creatureType as keyof typeof CreatureTypeRules];
+  const totalHD = Math.max(1, state.hd);
+  const isGood = typeRule?.goodSaves?.includes(save) ?? false;
+  const base = isGood ? 2 + Math.floor(totalHD / 2) : Math.floor(totalHD / 3);
+  const ability =
+    save === 'Fort' ? abilityMod(state.con) : save === 'Ref' ? abilityMod(state.dex) : abilityMod(state.wis);
+  return base + ability;
+};
+
+const computeLegalChassisValues = (state: ArchitectState) => {
+  const bab = calculateBAB(state.hd, CREATURE_TYPES[state.creatureType].bab);
+  return {
+    bab,
+    fort: computeSaveTarget(state, 'Fort'),
+    ref: computeSaveTarget(state, 'Ref'),
+    will: computeSaveTarget(state, 'Will'),
+  };
+};
+
+const computeCmdValue = (state: ArchitectState, babOverride?: number) => {
+  const sizeMod = SizeConstants[state.size]?.cmbCmdMod ?? 0;
+  const workingBab = babOverride ?? state.bab;
+  return 10 + workingBab + abilityMod(state.str) + abilityMod(state.dex) + sizeMod;
+};
+
+type BenchmarkStatus = 'ok' | 'high' | 'low';
+
+const benchmarkPalette: Record<BenchmarkStatus, { bg: string; color: string; label: string }> = {
+  ok: { bg: '#ecfdf5', color: '#047857', label: 'On target' },
+  high: { bg: '#fef3c7', color: '#b45309', label: 'High / Damage Sponge' },
+  low: { bg: '#fee2e2', color: '#b91c1c', label: 'Low / Glass Jaw' },
+};
+
+const evaluateBenchmarkStatus = (actual: number, expected?: number | null): BenchmarkStatus => {
+  if (expected === undefined || expected === null || expected === 0) return 'ok';
+  const pct = (actual - expected) / expected;
+  if (pct > 0.2) return 'high';
+  if (pct < -0.2) return 'low';
+  return 'ok';
 };
 
 const PRESETS = {
@@ -277,7 +322,64 @@ export const BestiaryArchitectApp: React.FC = () => {
   const nextLabel = step < MODULES.length - 1 ? `Next: ${MODULES[step + 1]}` : 'Finish';
   const prevLabel = step === 0 ? 'Back' : `Back to ${MODULES[step - 1]}`;
   const derivedHP = calculateHP(state.hd, state.con);
+  const benchmarkRow = useMemo(() => getBenchmarksForCR(state.targetCR.toString()), [state.targetCR]);
+  const hdEstimate = useMemo(() => estimateHDFromBenchmarks(state.targetCR.toString()), [state.targetCR]);
+  const hdGuardrail = useMemo(
+    () => ({
+      estimate: hdEstimate ?? null,
+      max: hdEstimate ? hdEstimate * 2 : null,
+      hpBenchmark: benchmarkRow?.hp ?? null,
+      totalHD: state.hd,
+      canonicalXP: XP_Table[state.targetCR.toString()] ?? null,
+    }),
+    [benchmarkRow?.hp, hdEstimate, state.hd, state.targetCR],
+  );
   const featCount = calculateFeatCount(state.hd, state.int);
+  const chassisTargets = useMemo(
+    () => computeLegalChassisValues(state),
+    [state.hd, state.creatureType, state.con, state.dex, state.wis],
+  );
+  const legalCmd = useMemo(
+    () => computeCmdValue(state, chassisTargets.bab),
+    [state.size, state.str, state.dex, chassisTargets.bab],
+  );
+  const actualCmd = useMemo(
+    () => computeCmdValue(state),
+    [state.size, state.str, state.dex, state.bab],
+  );
+  const cmdMismatch = actualCmd !== legalCmd;
+  const benchmarkStats = useMemo(() => {
+    if (!benchmarkRow) return [];
+    return [
+      {
+        key: 'hp',
+        label: 'HP Budget',
+        actual: derivedHP,
+        expected: benchmarkRow.hp,
+        status: evaluateBenchmarkStatus(derivedHP, benchmarkRow.hp),
+        helper: 'Keep HP within ±20% of CR baseline.',
+      },
+      {
+        key: 'ac',
+        label: 'Armor Class',
+        actual: state.ac,
+        expected: benchmarkRow.ac,
+        status: evaluateBenchmarkStatus(state.ac, benchmarkRow.ac),
+        helper: 'Extreme AC differences distort to-hit math.',
+      },
+      {
+        key: 'cmd',
+        label: 'CMD (Legal)',
+        actual: actualCmd,
+        expected: legalCmd,
+        status: evaluateBenchmarkStatus(actualCmd, legalCmd),
+        helper: 'Uses legal BAB + Str/Dex + size.',
+      },
+    ];
+  }, [benchmarkRow, derivedHP, state.ac, actualCmd, legalCmd]);
+  const applyLegalBab = () => setState(s => ({ ...s, bab: chassisTargets.bab }));
+  const applyLegalSave = (save: 'fort' | 'ref' | 'will') =>
+    setState(s => ({ ...s, [save]: chassisTargets[save] } as ArchitectState));
   
   const typeInfo = CREATURE_TYPES[state.creatureType];
   const suggestedBAB = calculateBAB(state.hd, typeInfo.bab);
@@ -480,6 +582,7 @@ export const BestiaryArchitectApp: React.FC = () => {
                     template={state.template}
                     onTemplateChange={next => setState(s => ({ ...s, template: next }))}
                     onSizeChange={size => setState(s => ({ ...s, size }))}
+                    hdGuardrail={hdGuardrail}
                   />
                   {structuralMessages.length > 0 && (
                     <div style={{ border: '1px solid #f59e0b', background: '#fffbeb', borderRadius: 10, padding: 12 }}>
@@ -573,6 +676,10 @@ export const BestiaryArchitectApp: React.FC = () => {
                             onChange={e => setState(s => ({ ...s, fort: Number(e.target.value) }))}
                             style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 14 }}
                           />
+                          <small style={{ fontSize: 11, color: '#475569' }}>Target: +{chassisTargets.fort}</small>
+                          <button type="button" onClick={() => applyLegalSave('fort')} style={{ fontSize: 11, padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>
+                            Set to legal
+                          </button>
                         </label>
                         <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
                           Ref
@@ -582,6 +689,10 @@ export const BestiaryArchitectApp: React.FC = () => {
                             onChange={e => setState(s => ({ ...s, ref: Number(e.target.value) }))}
                             style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 14 }}
                           />
+                          <small style={{ fontSize: 11, color: '#475569' }}>Target: +{chassisTargets.ref}</small>
+                          <button type="button" onClick={() => applyLegalSave('ref')} style={{ fontSize: 11, padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>
+                            Set to legal
+                          </button>
                         </label>
                         <label style={{ fontWeight: 600, display: 'grid', gap: 6 }}>
                           Will
@@ -591,8 +702,21 @@ export const BestiaryArchitectApp: React.FC = () => {
                             onChange={e => setState(s => ({ ...s, will: Number(e.target.value) }))}
                             style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontSize: 14 }}
                           />
+                          <small style={{ fontSize: 11, color: '#475569' }}>Target: +{chassisTargets.will}</small>
+                          <button type="button" onClick={() => applyLegalSave('will')} style={{ fontSize: 11, padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>
+                            Set to legal
+                          </button>
                         </label>
                       </div>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                      <div style={{ fontWeight: 700 }}>CMD Check</div>
+                      <div style={{ fontSize: 13, color: '#475569' }}>Current: {actualCmd} • Legal Math: {legalCmd}</div>
+                      {cmdMismatch && (
+                        <div style={{ padding: '6px 10px', borderRadius: 8, background: '#fef3c7', color: '#92400e', fontSize: 12, fontWeight: 600 }}>
+                          Update BAB to sync CMD
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'grid', gap: 10 }}>
                       <div style={{ fontWeight: 700 }}>Feat Selection ({featCount})</div>

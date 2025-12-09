@@ -135,7 +135,7 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
 
     // --- 4. TYPE-HITDIE SANITY CHECK ---
     // Warn if type's hit die is smaller than d6 (uncommon for monsters; usually d4 is not used for racial HD)
-    const typeRule = CreatureTypeRules[block.type as any];
+    const typeRule = CreatureTypeRules[block.type];
     if (typeRule && typeof typeRule.hitDieType === 'number' && typeRule.hitDieType < 6) {
         messages.push({
             category: 'basics',

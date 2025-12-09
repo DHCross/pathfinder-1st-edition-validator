@@ -9,6 +9,7 @@ import { validateBenchmarks } from '../engine/validateBenchmarks';
 import { validateEconomy } from '../engine/validateEconomy';
 import { ValidatorDisplay } from './ValidatorDisplay';
 import { PF1eStatBlock, ValidationResult } from '../types/PF1eStatBlock';
+import { getBenchmarksForCR } from '../lib/benchmarkUtils';
 import './ValidatorPlayground.css';
 
 const SAMPLE_TEXT = `New Creature

@@ -7,7 +7,7 @@ import { validateBenchmarks } from '../src/engine/validateBenchmarks';
 import { validateEconomy } from '../src/engine/validateEconomy';
 
 // Use the user's provided test document in `Rules/Test docs`
-const filePath = path.join(process.cwd(), 'Rules/Test docs/A0 Cyclopedia Pathfinder 1e (Most Recent) (2).md');
+const filePath = path.join(process.cwd(), 'Rules/A0 Cyclopedia Pathfinder 1e (Most Recent) (2).md');
 const reportPath = path.join(process.cwd(), 'Audit_Report_A0_Cyclopedia_TEST.md');
 
 function extractStatBlocks(content: string): string[] {

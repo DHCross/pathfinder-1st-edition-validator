@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 
+export type HdGuardrailInfo = {
+  estimate?: number | null;
+  max?: number | null;
+  hpBenchmark?: number | null;
+  totalHD?: number;
+  canonicalXP?: number | null;
+};
+
 export type FoundationProps = {
   name: string;
   targetCR: number;
@@ -31,6 +39,7 @@ export type FoundationProps = {
   onChaChange: (next: number) => void;
   onBuildPathChange: (next: FoundationProps['buildPath']) => void;
   onLoadPreset?: (preset: 'NastyBeast' | 'LowestScores') => void;
+  hdGuardrail?: HdGuardrailInfo;
 };
 
 const PATHS: Array<FoundationProps['buildPath']> = ['Monster', 'NPC', 'From-Scratch'];
@@ -66,8 +75,15 @@ export const FoundationBuilder: React.FC<FoundationProps> = ({
   onApplyTemplate,
   onSizeChange,
   onHdDieChange,
+  hdGuardrail,
 }) => {
   const [autoAdjustPhysical, setAutoAdjustPhysical] = useState(false);
+  const guardrailEstimate = typeof hdGuardrail?.estimate === 'number' ? hdGuardrail.estimate : undefined;
+  const guardrailMax = typeof hdGuardrail?.max === 'number' ? hdGuardrail.max : undefined;
+  const guardrailHpBenchmark =
+    typeof hdGuardrail?.hpBenchmark === 'number' ? hdGuardrail.hpBenchmark : undefined;
+  const guardrailTotalHD = typeof hdGuardrail?.totalHD === 'number' ? hdGuardrail.totalHD : hd;
+  const guardrailXP = typeof hdGuardrail?.canonicalXP === 'number' ? hdGuardrail.canonicalXP : undefined;
 
   const sizeBaseScores: Record<string, { str: number; dex: number; con: number }> = {
     Medium: { str: 10, dex: 10, con: 10 },
@@ -289,13 +305,8 @@ export const FoundationBuilder: React.FC<FoundationProps> = ({
               <strong>Note:</strong> Humanoids commonly use class levels rather than Racial HD for progression. Use NPC classes to represent Humanoid threats at low CR (e.g., CR 1/3 Foot Soldier = 1 level fighter).
             </div>
           )}
-        </div>
-
-        <div style={{ display: 'grid', gap: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontWeight: 700 }}>Target CR</div>
-            <span style={{ fontSize: 13, color: '#475569' }}>CR {targetCR}</span>
-          </div>
+          <div style={{ fontWeight: 700 }}>Target CR</div>
+          <span style={{ fontSize: 13, color: '#475569' }}>CR {targetCR}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 12, color: '#94a3b8' }}>1</span>
             <input
@@ -311,6 +322,35 @@ export const FoundationBuilder: React.FC<FoundationProps> = ({
           <div style={{ fontSize: 13, color: '#475569' }}>
             Calibrates HP, saves, attack bonuses, and loot tiers. Adjust to match your table’s target difficulty.
           </div>
+          {hdGuardrail && (
+            <div style={{ border: '1px solid #c7d2fe', background: '#eef2ff', borderRadius: 12, padding: 12, display: 'grid', gap: 8 }}>
+              <div style={{ fontWeight: 700, color: '#312e81' }}>HD / CR Guardrail</div>
+              <div style={{ fontSize: 13, color: '#312e81' }}>
+                CR {targetCR} benchmarks ~{guardrailEstimate ?? '—'} HD ({guardrailHpBenchmark ?? '—'} hp). Current build uses {guardrailTotalHD} HD.
+              </div>
+              {guardrailMax !== undefined && guardrailTotalHD > guardrailMax && (
+                <div style={{ color: '#b45309', fontSize: 13 }}>
+                  Warning: exceeding {guardrailMax} HD will trigger Rules Lawyer critical errors.
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {typeof guardrailEstimate === 'number' && (
+                  <button
+                    type="button"
+                    onClick={() => onHdChange(Math.max(1, guardrailEstimate))}
+                    style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #a5b4fc', background: '#fff', color: '#4338ca', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Set HD to {guardrailEstimate}
+                  </button>
+                )}
+                {typeof guardrailXP === 'number' && (
+                  <span style={{ padding: '6px 12px', borderRadius: 999, background: '#312e81', color: '#fff', fontSize: 12, fontWeight: 600 }}>
+                    XP locked: {guardrailXP}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'grid', gap: 10 }}>
