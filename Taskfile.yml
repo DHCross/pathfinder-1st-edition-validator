@@ -1,0 +1,68 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    desc: "List available tasks"
+    cmds:
+      - task --list
+    silent: true
+
+  dev:
+    desc: "Run TypeScript compiler in watch mode"
+    cmds:
+      - npm run dev
+
+  build:
+    desc: "Build the library via TypeScript compiler"
+    cmds:
+      - npm run build
+
+  test:
+    desc: "Run unit tests with Vitest"
+    cmds:
+      - npm test
+
+  lint:
+    desc: "Lint TypeScript sources with ESLint"
+    cmds:
+      - npm run lint
+
+  format:
+    desc: "Format source files with Prettier"
+    cmds:
+      - npm run format
+
+  storybook:
+    desc: "Run Storybook in dev mode on port 6006"
+    cmds:
+      - npm run storybook
+
+  storybook:build:
+    desc: "Build the static Storybook bundle"
+    cmds:
+      - npm run build-storybook
+
+  check:
+    desc: "Run lint, tests, and build (pre-commit sanity check)"
+    cmds:
+      - task: lint
+      - task: test
+      - task: build
+
+  ci:
+    desc: "CI-style pipeline (alias for check)"
+    cmds:
+      - task: check
+
+  dev:all:
+    desc: "Run TypeScript watcher and Storybook together"
+    deps:
+      - dev
+      - storybook
+
+  clean:
+    desc: "Clean build artifacts (dist/, storybook-static/)"
+    cmds:
+      - rm -rf dist storybook-static

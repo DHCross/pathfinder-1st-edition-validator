@@ -25,12 +25,16 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
     return { valid: true, messages, status: 'PASS' } as any;
   }
 
+  let hpStatus: 'high' | 'low' | 'ok' = 'ok';
+  let acStatus: 'high' | 'low' | 'ok' = 'ok';
+
   // 1. Validate HP (The "Glass Jaw" Check)
   const hpClaimed = block.hp_claimed ?? block.hp ?? undefined;
   if (hpClaimed !== undefined && typeof hpClaimed === 'number') {
     const hpPercent = hpClaimed / benchmarks.hp;
 
     if (hpPercent < 0.7) {
+      hpStatus = 'low';
       messages.push({
         severity: 'warning',
         category: 'benchmarks',
@@ -39,6 +43,7 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
         actual: hpClaimed
       });
     } else if (hpPercent > 1.5) {
+      hpStatus = 'high';
       messages.push({
         severity: 'warning',
         category: 'benchmarks',
@@ -55,6 +60,7 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
     const acDiff = acClaimed - benchmarks.ac;
 
     if (acDiff < -4) {
+      acStatus = 'low';
       messages.push({
         severity: 'warning',
         category: 'benchmarks',
@@ -63,6 +69,7 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
         actual: acClaimed
       });
     } else if (acDiff > 4) {
+      acStatus = 'high';
       messages.push({
         severity: 'warning',
         category: 'benchmarks',
@@ -71,6 +78,22 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
         actual: acClaimed
       });
     }
+  }
+
+  if (hpStatus === 'high' && acStatus === 'low') {
+    messages.push({
+      severity: 'warning',
+      category: 'benchmarks',
+      message: `HP ${hpClaimed} is far above benchmark while AC ${acClaimed} is far below it. This indicates 5e-style drift (damage sponge / low defense). Consider lowering HP or raising AC to stay within PF1e CR ${block.cr} expectations.`,
+      expected: {
+        hp: benchmarks.hp,
+        ac: benchmarks.ac,
+      },
+      actual: {
+        hp: hpClaimed,
+        ac: acClaimed,
+      },
+    });
   }
 
   // 3. Validate Saves
