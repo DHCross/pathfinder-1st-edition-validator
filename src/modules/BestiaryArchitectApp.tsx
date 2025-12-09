@@ -612,10 +612,37 @@ export const BestiaryArchitectApp: React.FC = () => {
                   <div style={{ display: 'grid', gap: 10 }}>
                     <div style={{ background: '#f0f9ff', border: '1px solid #38bdf8', borderRadius: 10, padding: 12 }}>
                       <div style={{ fontWeight: 700, color: '#0369a1', marginBottom: 6 }}>Type: {state.creatureType}</div>
-                        <div style={{ fontSize: 13, color: '#0c4a6e' }}>
-                          <strong>Expected Mechanics:</strong> {state.hdDie || typeInfo.hd} HD, {typeInfo.bab} BAB progression (suggested +{suggestedBAB}), good saves: {typeInfo.goodSaves.join(', ') || 'none'}, {typeInfo.skillRanks} skill ranks/HD.
-                        </div>
+                      <div style={{ fontSize: 13, color: '#0c4a6e' }}>
+                        <strong>Expected Mechanics:</strong> {state.hdDie || typeInfo.hd} HD, {typeInfo.bab} BAB progression (suggested +{suggestedBAB}), good saves: {typeInfo.goodSaves.join(', ') || 'none'}, {typeInfo.skillRanks} skill ranks/HD.
+                      </div>
                     </div>
+                    {benchmarkStats.length > 0 && (
+                      <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                        {benchmarkStats.map(stat => {
+                          const palette = benchmarkPalette[stat.status];
+                          return (
+                            <div
+                              key={stat.key}
+                              style={{
+                                borderRadius: 12,
+                                padding: 12,
+                                border: `1px solid ${palette.color}33`,
+                                background: palette.bg,
+                                boxShadow: '0 4px 12px rgba(15,23,42,0.08)',
+                              }}
+                            >
+                              <div style={{ fontSize: 12, fontWeight: 700, color: palette.color, letterSpacing: 0.4, textTransform: 'uppercase' }}>
+                                {stat.label}
+                              </div>
+                              <div style={{ fontSize: 28, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>{stat.actual}</div>
+                              <div style={{ fontSize: 12, color: '#475569' }}>Benchmark: {stat.expected ?? '—'}</div>
+                              <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: palette.color }}>{palette.label}</div>
+                              <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>{stat.helper}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                     {babMismatch && (
                       <div style={{ border: '1px solid #7c3aed', background: '#f5f3ff', borderRadius: 10, padding: 12 }}>
                         <div style={{ fontWeight: 700, color: '#5b21b6', marginBottom: 6 }}>Type-Based BAB Suggestion</div>
@@ -623,7 +650,7 @@ export const BestiaryArchitectApp: React.FC = () => {
                           Your {state.creatureType} with {state.hd} HD uses <strong>{typeInfo.bab} progression</strong>, suggesting a BAB of <strong>+{suggestedBAB}</strong>. Current BAB: <strong>+{state.bab}</strong>.
                         </div>
                         <button
-                          onClick={() => setState(s => ({ ...s, bab: suggestedBAB }))}
+                          onClick={applyLegalBab}
                           style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #a78bfa', background: '#ede9fe', color: '#5b21b6', fontWeight: 600, cursor: 'pointer' }}
                         >
                           Apply Suggested BAB
