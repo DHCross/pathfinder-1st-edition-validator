@@ -403,7 +403,7 @@ STATISTICS
 
 **Str** 20 **Dex** 10 **Con** 14 **Int** 2 **Wis** 7 **Cha** 6
 
-**Base Atk** \+4; **CMB** \+9 **CMD** 19
+**Base Atk** \+2; **CMB** \+7 **CMD** 17
 
 **Feats:** Aquatic Combatant, Toughness, Great Fortitude
 
@@ -622,34 +622,32 @@ SPECIAL ABILITIES
 **Maltorio CR 5**
 
 **XP 1,600**  
-Devil Sorcerer 10  
+Devil Sorcerer 6  
 LE Medium Fiend (Devil, Shapechanger)  
 **Init** \+3; **Senses** Perception \+4
 
 DEFENSE
 
 **AC** 16, touch 14 flat-footed 12, (+3 dex, \+1 dodge, \+2 natural)  
-**HP** 55 (6d8 \+ 18\)  
-**Fort** \+6, **Ref** \+6, **Will** \+11
+**HP** 35 (6d6 \+ 12)  
+**Fort** \+4, **Ref** \+5, **Will** \+9
 
 OFFENSE
 
 **Speed** 30 ft.  
-**Melee** Unarmed Strike \+7 (1d3 \+ 2\)  
-**Melee (True Form)** Talons \+6 (2d6 \+ 3), Barbed Tail \+6 (2d4 \+ 3 \+ DC 14 Reflex to avoid 4d8 fire, halved on a successful save)  
-**Sorcerer Spells Prepared** (CL 10th; concentration \+10 (+14 while casting defensively or grappled))
+**Melee** Unarmed Strike \+5 (1d3 \+ 2)  
+**Melee (True Form)** Talons \+5 (2d6 \+ 3), Barbed Tail \+5 (2d4 \+ 3 \+ DC 14 Reflex to avoid 3d6 fire, halved on a successful save)  
+**Sorcerer Spells Known** (CL 6th; concentration \+11 (+15 while casting defensively or grappled))
 
-**5th (3/Day)**—*Dream*  
-**4th (5/Day)**—*Illusory Wall, Wall of Fire*  
-**3rd (6/Day)**—*Charm Monster, Heatstroke, Major Image*  
-**2nd (6/Day)**—*Scorching Ray, Suggestion, Minor Image, Misdirection*  
-**1st (6/Day)**—*Disguise Self, Illusion of Calm, Infernal Healing, Open and Shut, Protection from Good, Ventriloquism*  
-**0 (at will)**—*Daze, Detect Fiendish Presence, Mage Hand, Message, Oath of Anonymity, Open/Close, Presidigitation, Scrivener’s Chant, Thaumaturgy*
+**3rd (4/Day)**—*Major Image, Suggestion*  
+**2nd (6/Day)**—*Scorching Ray, Minor Image, Misdirection*  
+**1st (7/Day)**—*Disguise Self, Illusion of Calm, Infernal Healing, Protection from Good, Ventriloquism*  
+**0 (at will)**—*Daze, Detect Fiendish Presence, Mage Hand, Message, Open/Close, Prestidigitation*
 
 STATISTICS
 
-**Str** 14, **Dex** 16, **Con** 16, **Int** 18, **Wis** 14, **Cha** 20  
-**Base Atk** \+5 (+6/+2 True Form); **CMB** \+7; **CMD** 20  
+**Str** 14, **Dex** 16, **Con** 14, **Int** 16, **Wis** 14, **Cha** 20  
+**Base Atk** \+3; **CMB** \+5; **CMD** 18  
 **Feats** Alertness, Combat Casting, Iron Will, Dodge, Eschew Materials, Skill Focus (Diplomacy)  
 **Skills** Bluff \+9, Diplomacy \+12, Knowledge (Arcana) \+7, Knowledge (History) \+6, Perception \+4, Perform \+7, Sense Motive \+7  
 **Languages** Common (Velossan), Infernal, Various forbidden languages  
@@ -658,7 +656,7 @@ STATISTICS
 SPECIAL ABILITIES
 
 **Shapechanger (Su)** As an action, Maltario can polymorph between his true devilish form and a charming human guise.   
-**Infernal Fireblast (Sp) (Recharge 5-6)** Each creature within a 20 ft. cone must make a DC 14 Reflex Save, taking 4d8 fire damage on a failed save, or half as much on a success.
+**Infernal Fireblast (Sp) (Recharge 5-6)** Each creature within a 20 ft. cone must make a DC 14 Reflex Save, taking 3d6 fire damage on a failed save, or half as much on a success.
 
 #### Elemara
 
@@ -985,7 +983,7 @@ OFFENSE
 
 **Speed** 30 ft.
 
-**Melee** Great Cleaver \+5 (1d10 \+ 3, 19-20/x2), Carving Knife \+5 (1d6)
+**Melee** Great Cleaver \+4 (1d10 \+ 3, 19-20/x2), Carving Knife \+5 (1d6)
 
 **Space** 5ft; **Reach** 5ft
 
@@ -993,7 +991,7 @@ STATISTICS
 
 **Str** 16 **Dex** 10 **Con** 16 **Int** 3 **Wis** 8 **Cha** 5
 
-**Base Atk** \+3; **CMB** \+6 **CMD** 16
+**Base Atk** \+1; **CMB** \+4 **CMD** 14
 
 **Feats:** Weapon Focus (Carving Knife), Power Attack
 
