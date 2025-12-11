@@ -38,7 +38,7 @@ DEFENSE
 
 **AC** 11, touch 11, flat-footed 10 (+1 Dex, \+1 Natural, \-1 Size)
 
-**HP** 39 (6d10 \+ 6\)
+**HP** 15 (2d10 \+ 4\)
 
 **Fort** \+4, **Ref** \+6, **Will** \+1
 
@@ -54,11 +54,11 @@ OFFENSE
 
 STATISTICS
 
-**Str** 15 **Dex** 13 **Con** 13 **Int** 2 **Wis** 10 **Cha** 3
+**Str** 15 **Dex** 13 **Con** 14 **Int** 2 **Wis** 10 **Cha** 3
 
-**Base Atk** \+2; **CMB** \+5 **CMD** 20
+**Base Atk** \+1; **CMB** \+4 **CMD** 14
 
-**Feats:** Lightning Reflexes, Toughness, Skill Focus (Perception)
+**Feats:** Lightning Reflexes, Toughness
 
 **Skills** Acrobatics \+9 (+13 jumping), Perception \+10, Stealth \+4, Swim \+8
 
@@ -94,9 +94,9 @@ CN Medium Chaos-Beast
 
 DEFENSE
 
-**AC** 15, touch 13, flat-footed 12 (+3 Dex, \+2 Natural)
+**AC** 13, touch 13, flat-footed 10 (+3 Dex)
 
-**HP** 17 (2d8 \+ 8\)
+**HP** 9 (1d8 \+ 4\)
 
 **Fort** \+5, **Ref** \+6, **Will** \+1
 
@@ -148,8 +148,8 @@ CE Medium Humanoid (Orc)
 
 DEFENSE
 
-**AC** 7, touch x flat-footed x, (+1 dex, \-4 natural)  
-**HP** 32 (5d8 \+ 9\)  
+**AC** 11, touch 11, flat-footed 10, (+1 dex)  
+**HP** 22 (3d8 \+ 9\)  
 **Fort** \+5, **Ref** \+2, **Will** \+2  
 **Resist** fire 5, acid 5  
 **Defensive Abilities** Ferocity
@@ -188,9 +188,9 @@ CN Small Beast
 
 DEFENSE
 
-**AC** 13, touch 13, flat-footed 10 (+3 Dex, \+x Natural)
+**AC** 14, touch 14, flat-footed 11 (+3 Dex, \+1 Size)
 
-**HP** 16 (3d6 \+ 6\)
+**HP** 8 (2d6 \+ 2\)
 
 **Fort** \+2, **Ref** \+3, **Will** \+1
 
@@ -396,7 +396,7 @@ DEFENSE
 
 **AC** 15, touch 10, flat-footed 15 (+5 Natural)
 
-**HP** 37 (6d8 \+ 10\)
+**HP** 15 (2d8 \+ 6\)
 
 **Fort** \+2, **Ref** \+0, **Will** \-2
 
@@ -414,7 +414,7 @@ STATISTICS
 
 **Str** 20 **Dex** 10 **Con** 14 **Int** 2 **Wis** 7 **Cha** 6
 
-**Base Atk** \+2; **CMB** \+7 **CMD** 21
+**Base Atk** \+4; **CMB** \+9 **CMD** 19
 
 **Feats:** Aquatic Combatant, Toughness, Great Fortitude
 
@@ -446,7 +446,7 @@ DEFENSE
 
 **AC** 14, touch 14, flat-footed 10 (+4 Dex)
 
-**HP** 17 (3d8 \+ 3\)
+**HP** 11 (2d8 \+ 2\)
 
 **Fort** \+4, **Ref** \+5, **Will** \+1
 
@@ -462,7 +462,7 @@ STATISTICS
 
 **Str** 12 **Dex** 18 **Con** 12 **Int** 2 **Wis** 11 **Cha** 4
 
-**Base Atk** \+4; **CMB** \+7 **CMD** 18
+**Base Atk** \+2; **CMB** \+3 **CMD** 17
 
 **Feats:** Improved Initiative, Skill Focus (Stealth) 
 
@@ -492,7 +492,7 @@ DEFENSE
 
 **AC** 12, touch 12, flat-footed 10 (+2 Dex, \+1 Natural, \- 1 Size)
 
-**HP** 52 (7d10 \+ 14\)
+**HP** 30 (4d10 \+ 8\)
 
 **Fort** \+4, **Ref** \+3, **Will** \+1
 
@@ -510,7 +510,7 @@ STATISTICS
 
 **Str** 18 **Dex** 14 **Con** 15 **Int** 1 **Wis** 12 **Cha** 4
 
-**Base Atk** \+2; **CMB** \+7 **CMD** 24
+**Base Atk** \+5; **CMB** \+10 **CMD** 21
 
 **Feats:** Aquatic Combatant, Improved Initiative, Toughness, Lightning Reflexes
 
@@ -582,7 +582,7 @@ OFFENSE
 STATISTICS
 
 **Str** 10, **Dex** 16, **Con** 14, **Int** 12, **Wis** 10, **Cha** 15  
-**Base Atk** \+1; **CMB** \+1; **CMD** 14  
+**Base Atk** \+1; **CMB** \+1; **CMD** 15  
 **Feats** Dodge, Skill Focus (Bluff), Weapon Finesse, Toughness, Iron Will  
 **Skills** Bluff \+11, Diplomacy \+4, Perception \+1, Sense Motive \+4, Sleight of Hand \+5, Stealth \+7  
 **Languages** Common, Callistaran  
@@ -606,7 +606,7 @@ LN Medium Humanoid
 DEFENSE
 
 **AC** 18, touch 11 flat-footed 17, (+6 armor, \+1 dex, \+1 natural)  
-**HP** 60(8d8 \+ 24\)  
+**HP** 30 (4d8 \+ 12\)  
 **Fort** \+6, **Ref** \+2 **Will** \+2
 
 OFFENSE
@@ -640,7 +640,7 @@ LE Medium Fiend (Devil, Shapechanger)
 DEFENSE
 
 **AC** 16, touch 14 flat-footed 12, (+3 dex, \+1 dodge, \+2 natural)  
-**HP** 85(10d8 \+ 30\)  
+**HP** 55 (6d8 \+ 18\)  
 **Fort** \+6, **Ref** \+6, **Will** \+11
 
 OFFENSE
@@ -681,8 +681,8 @@ N Medium Magical Beast
 
 DEFENSE
 
-**AC** 15, touch x flat-footed x, (+3 dex, \+2 natural)  
-**HP** 95(10d8 \+ 40\)  
+**AC** 15, touch 13, flat-footed 12, (+3 dex, \+2 natural)  
+**HP** 55 (6d8 \+ 24\)  
 **Fort** \+8, **Ref** \+7, **Will** \+9
 
 OFFENSE
@@ -756,7 +756,7 @@ NE Medium Humanoid
 DEFENSE
 
 **AC** 16, touch 13 flat-footed 13, (+3 armor, \+3 dex)  
-**HP** 32(6d8 \+ 6\)  
+**HP** 30 (4d8 \+ 8\)  
 **Fort** \+4, **Ref** \+8, **Will** \+4  
 **Defensive Abilities** Trapfinding (+3), Evasion, Trap Sense (+2), Uncanny Dodge
 
@@ -925,7 +925,7 @@ NG Medium Humanoid
 
 DEFENSE
 
-**AC** 13, touch x flat-footed x, (+1 armor, \+2 dex)  
+**AC** 13, touch 12, flat-footed 11, (+1 armor, \+2 dex)  
 **HP** 15(4d8)  
 **Fort** \+1, **Ref** \+3, **Will** \+3
 
@@ -980,7 +980,7 @@ STATISTICS
 
 CN Medium Construct
 
-**Init** \+x**; Senses** Blindsight 60 ft. (Blind beyond this radius), Tremorsense 60ft., Perception \+12
+**Init** \+0**; Senses** Blindsight 60 ft. (Blind beyond this radius), Tremorsense 60ft., Perception \+12
 
 **Immune** Poison; Exhaustion, Fatigue Frightened, Paralyzed, Sickened **Resist** Bludgeoning 5, Piercing 5, Slashing 5
 
@@ -988,9 +988,9 @@ DEFENSE
 
 **AC** 14, touch 10, flat-footed 14 (+4 Natural)
 
-**HP** 30 (4d8 \+ 12\)
+**HP** 15 (2d8 \+ 6\)
 
-**Fort** \+5, **Ref** \+2, **Will** \+0
+**Fort** \+3, **Ref** \+0, **Will** \+0
 
 OFFENSE
 
@@ -1004,7 +1004,7 @@ STATISTICS
 
 **Str** 16 **Dex** 10 **Con** 16 **Int** 3 **Wis** 8 **Cha** 5
 
-**Base Atk** \+2/+0; **CMB** \+5 **CMD** 17
+**Base Atk** \+3; **CMB** \+6 **CMD** 16
 
 **Feats:** Weapon Focus (Carving Knife), Power Attack
 
@@ -1063,7 +1063,7 @@ CN Medium Humanoid
 DEFENSE
 
 **AC** 12, touch 12 flat-footed 10, (+2 armor)  
-**HP** 36(4d10 \+ 8\)  
+**HP** 12 (2d10 \+ 2\)  
 **Fort** \+3, **Ref** \+1, **Will** \+0
 
 OFFENSE
