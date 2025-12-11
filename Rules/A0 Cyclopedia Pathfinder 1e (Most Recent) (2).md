@@ -3,7 +3,7 @@
 Welcome to the A0 Cyclopedia: *Caravan’s End* (Pathfinder 1st Edition), a Pathfinder 1st Edition conversion kit for the *Hoskbrew* series. All Hoskbrew scenarios are written system-agnostic by design and are supported by dedicated *Cyclopedias* tailored for specific game systems. This volume, the A0 Cyclopedia: PF1e Caravan’s End, provides everything you need to run the adventure in Pathfinder 1st Edition: detailed mechanics for every encounter, fully statted NPCs, unique magic items, and any custom rules created specifically for this scenario.
 
 *Caravan’s End* is designed for a party of four 1st-level characters, with optional adjustments for groups of three or five to six players.  
-Each encounter includes a suggested XP reward. To scale difficulty, simply add or subtract 25 XP per encounter: increasing the challenge adds 25 XP, while easing it reduces XP by the same amount.
+Each encounter includes a suggested XP reward based on standard Pathfinder 1st Edition CR values. To scale difficulty for smaller or larger parties, adjust the number of creatures or use the variant stat blocks provided.
 
 The cyclopedia follows the adventure scene by scene, providing a clear and accessible roadmap for the GM. Each encounter entry includes:
 
@@ -72,13 +72,13 @@ SPECIAL ABILITIES
 
 **Swallow** **(Ex)** The toad makes one bite attack against a medium or smaller target it is grappling. If the attack hits, the target is swallowed. The swallowed target is blinded and takes 2d6 acid damage at the start of each of its turns. The toad can only have one target swallowed at a time. 
 
-### **Chaos-Mutated Toad XP Adjustments**
+### **Chaos-Mutated Toad Scaling**
 
-At **150 XP**, the younger toad has 25 hit points (4d10+3), is Medium sized (AC 13), and its tongue cannot grapple Large or larger creatures. This version suits a party of three.
+**Weakened (CR 1/2, 200 XP):** For a party of three. HP 10 (1d10+4), Medium sized (AC 12), tongue cannot grapple Large or larger creatures.
 
-At **200 XP**, the standard toad as written has 39 hit points (6d10+6), is Large sized, and is balanced for a standard party of four.
+**Standard (CR 1, 400 XP):** As written above. HP 15 (2d10+4), Large sized. Balanced for a party of four.
 
-At **250 XP**, the fully grown toad reaches 66 hit points (9d10+18 at maximum), attacks with a bite at \+6 for 2d6+4 (grapple Reflex DC 15), wields a tongue grapple at 20 feet (Reflex DC 15), and can swallow prey for 3d6 acid damage. This tougher form is intended for parties of five or six.
+**Advanced (CR 2, 600 XP):** For parties of five or six. HP 22 (3d10+6), bite +5 (1d10+3), tongue grapple DC 14, swallow deals 3d6 acid.
 
 ### Scene 3: This is the Pits
 
@@ -124,16 +124,11 @@ SPECIAL ABILITIES
 
 **Keen Hearing (Ex)** The rabbit gains a \+5 bonus to Perception checks that rely on sound.
 
-### **Mutant Rabbit XP Adjustments**
+### **Mutant Rabbit Scaling**
 
-**25 XP – Scrawny Rabbit**  
- For a party of three. Hit points 9 (2d8); bite deals 4 (1d4+2) piercing damage.
+**Standard (CR 1/4, 100 XP):** As written above. HP 9 (1d8+4). Balanced for a party of four.
 
-**50 XP – Standard Mutant Rabbit**  
- As written. Balanced for a standard party of four.
-
-**75 XP – Feral Rabbit**  
- For five or six characters. Hit points 25 (4d8+7); bite deals 7 (1d6+4) piercing damage. Alternatively, substitute two standard rabbits (100 XP total) depending on desired tone.
+**Advanced (CR 1/2, 200 XP):** For parties of five or six. HP 13 (2d8+4), bite +5 (1d6+3). Alternatively, use two standard rabbits (200 XP total).
 
 ### Scene 5: A Demonic Harmonic
 
@@ -162,19 +157,19 @@ OFFENSE
 STATISTICS
 
 **Str** 14, **Dex** 12, **Con** 14, **Int** 11, **Wis** 13, **Cha** 11  
-**Base Atk** \+3; **CMB** \+5; **CMD** 19  
+**Base Atk** \+3; **CMB** \+5; **CMD** 16  
 **Feats** Alertness, Weapon Focus (Spear), Cleave, Power Attack  
 **Skills** Acrobatics \+6, Perception \+6 (+11 to sound and sight), Stealth \+7, Survival \+8  
 **Languages** Common, Orc  
 **Combat Gear** Rusty Spear
 
-### **Demonic Orc Scout XP Adjustments**
+### **Demonic Orc Scout Scaling**
 
-At **350 XP**, the scout is an inexperienced infiltrator, intended for a party of three characters. It has 24 hit points (4d8+8) and makes only one attack with its Multiattack equivalent instead of two.
+**Weakened (CR 1, 400 XP):** For a party of three. HP 15 (2d8+6), single spear attack only.
 
-At **450 XP**, the scout is presented as written, balanced for a standard party of four. It has 32 hit points (5d8+9), makes two attacks with its Multiattack equivalent, and retains all special abilities including Resilience, Reckless Attack equivalent, and Demonic Sight equivalent. The base Demonic Orc Scout also has the Ferocity defensive ability and Demonic Sight 60 ft. as standard senses.
+**Standard (CR 2, 600 XP):** As written above. HP 22 (3d8+9). Balanced for a party of four.
 
-At **550 XP**, the scout becomes a hardened skirmisher, intended for five or six characters. Its hit points rise to 45 (6d8+18), its Rusty Spear deals 7 (1d4+5) piercing damage compared to the standard 1d8+2, and its Reckless Attack equivalent adds \+2 damage on melee hits while attacking with advantage equivalent
+**Advanced (CR 3, 800 XP):** For parties of five or six. HP 30 (4d8+12), spear +7 (1d8+3).
 
 #### Mutant Rat
 
@@ -218,13 +213,11 @@ SPECIAL ABILITIES
 
 **Chaos-Touched Saliva (Su)** On a critical hit with a Bite attack, the target must immediately make a DC 12 Fortitude save. On a failure, the target rolls on the Random Chaos Mutations Table.
 
-### **Mutant Rat XP Adjustments**
+### **Mutant Rat Scaling**
 
-At **25 XP**, the smaller scavenger is intended for a party of three characters. It has 10 hit points (3d6) and its bite deals 5 (1d6+2) piercing damage.
+**Standard (CR 1/4, 100 XP):** As written above. HP 8 (2d6+2). Balanced for a party of four.
 
-At **50 XP**, the standard specimen is presented as written for a party of four. It has 16 hit points (3d6+6), its bite deals 7 (1d6+4) piercing damage, and the saving throw DC for the bite is 12\. The base mutant rat carries the “Chaos-Touched Saliva (Su)” ability, which requires a DC 12 Fortitude save on a critical hit.
-
-At **75 XP**, the feral specimen is intended for a party of five or six characters. It has 22 hit points (4d6+8), its bite deals 9 (1d6+6) piercing damage, and the saving throw DC for the bite increases to 13\.
+**Advanced (CR 1/2, 200 XP):** For parties of five or six. HP 12 (3d6+3), bite +7 (1d4+5), Chaos-Touched Saliva DC 13.
 
 #### The Rat King
 
@@ -276,15 +269,11 @@ SPECIAL ABILITIES
 
 **Festering Bite (Ex)** Creatures damaged by the Rat King’s bite must make a DC 11 Fortitude save, becoming sickened for 1 minute on a failure. 
 
-### **Rat King XP Adjustments**
+### **Rat King Scaling**
 
-The Rat King is a single Medium chaos-beast. When he appears alongside mutant rats, they are treated as separate creatures with their own stat blocks and XP. His swarm reflects a chaotic aura of vermin and scales as shown below. These adjustments are distinct from the XP adjustments of individual mutant rats; if the Rat King appears with them, both sets apply.
+**Standard (CR 1/4, 100 XP):** As written above. HP 8 (1d8+4). Balanced for a party of four.
 
-At **25 XP**, the Rat King commands a diminished swarm, intended for a party of three characters. He has 22 hit points (4d8+6), loses resistance to bludgeoning, piercing, and slashing damage, and his Many Bites attack deals 1d6 piercing damage (1 on half HP) without the poison effect.
-
-At **50 XP**, he commands a standard swarm, balanced for four characters. He has 44 hit points (7d8+3), retains his resistances, and his Many Bites attack deals 2d6 piercing damage (1d6 on half HP) with a DC 11 Constitution save to resist poison.
-
-At **75 XP**, the Rat King commands a feral swarm, intended for a party of five or six characters. He has 60 hit points (9d8+12), his Many Bites attack deals 3d6 piercing damage (2d6 on half HP), and the poison saving throw DC increases to 13
+**Advanced (CR 1/2, 200 XP):** For parties of five or six. HP 13 (2d8+4), Many Bites deals 1d6 damage, Festering Bite DC 12.
 
 ### Scene 7: Arlo’s Warehouse
 
@@ -299,8 +288,8 @@ CN Small Humanoid
 
 DEFENSE
 
-**AC** 15, touch 13 flat-footed 12, (+2 armor, \+3 dex)  
-**HP** 13(3d6 \+ 3\)  
+**AC** 15, touch 13, flat-footed 12, (+2 armor, \+3 dex)  
+**HP** 8 (1d6 \+ 2\)  
 **Fort** \+1, **Ref** \+3, **Will** \+0
 
 OFFENSE
@@ -537,8 +526,8 @@ NG Medium Humanoid
 
 DEFENSE
 
-**AC** 10, touch 10 flat-footed 10  
-**HP** 11(2d8 \+ 2\)  
+**AC** 10, touch 10, flat-footed 10  
+**HP** 5 (1d8 \+ 1\)  
 **Fort** \+1, **Ref** \+0, **Will** \+2  
 **Defensive Abilities** ferocity
 
@@ -746,31 +735,31 @@ SPECIAL ABILITIES
 
 #### Litorro
 
-**Litorro CR 3**
+**Litorro CR 2**
 
-**XP 800**  
-Human Rogue 6  
+**XP 600**  
+Human Rogue 3  
 NE Medium Humanoid  
-**Init** \+5; **Senses** Perception \+4
+**Init** \+3; **Senses** Perception \+6
 
 DEFENSE
 
-**AC** 16, touch 13 flat-footed 13, (+3 armor, \+3 dex)  
-**HP** 30 (4d8 \+ 8\)  
-**Fort** \+4, **Ref** \+8, **Will** \+4  
-**Defensive Abilities** Trapfinding (+3), Evasion, Trap Sense (+2), Uncanny Dodge
+**AC** 16, touch 13, flat-footed 13, (+3 armor, \+3 dex)  
+**HP** 20 (3d8 \+ 6\)  
+**Fort** \+3, **Ref** \+6, **Will** \+3  
+**Defensive Abilities** Trapfinding (+1), Evasion, Trap Sense (+1)
 
 OFFENSE
 
 **Speed** 30 ft.  
-**Melee** Rapier \+7 (1d8+3), Dagger \+7 (1d4 \+3)  
-**Special Attacks** Sneak Attack (3d6)
+**Melee** Rapier \+5 (1d6+1), Dagger \+5 (1d4 \+1)  
+**Special Attacks** Sneak Attack (2d6)
 
 STATISTICS
 
 **Str** 12, **Dex** 16, **Con** 14, **Int** 13, **Wis** 14, **Cha** 11  
-**Base Atk** \+4; **CMB** \+5; **CMD** 18  
-**Feats** Alertness, Improved Initiative, Weapon Finesse, Dodge, Mobility, Toughness, Skill Focus (Stealth), Skill Focus (Perception)  
+**Base Atk** \+2; **CMB** \+3; **CMD** 16  
+**Feats** Improved Initiative, Weapon Finesse, Dodge  
 **Skills** Acrobatics \+3, Bluff \+9, Disguise \+5 (+8 in a crowd), Perception \+6 (+9 in a crowd), Sense Motive \+6, Sleight of Hand \+5, Stealth \+6  
 **Languages** Common (Velossan), Infernal  
 **Equipment** Studded leather armor, fine but worn travelling clothes (designed to draw no attention), satchel (manacles, coils of chain, black hood, forged documents, 22 gp mostly in foreign coin, rolled-up bounty contract naming Marlen with a payout of 500gp for her to be returned alive to Hellsgate)
@@ -793,8 +782,8 @@ N Medium Humanoid
 
 DEFENSE
 
-**AC** 12, touch 11 flat-footed 11, (+1 armor, \+1 dex)  
-**HP** 14(3d8)  
+**AC** 12, touch 11, flat-footed 11, (+1 armor, \+1 dex)  
+**HP** 8 (1d8)  
 **Fort** \+0, **Ref** \+1, **Will** \+0
 
 OFFENSE
