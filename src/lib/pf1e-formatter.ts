@@ -1,7 +1,7 @@
 // src/lib/pf1e-formatter.ts
 
 import { PF1eStatBlock } from '../types/PF1eStatBlock';
-import { ClassStatistics, CreatureTypeRules, SizeConstants } from '../rules/pf1e-data-tables';
+import { SizeConstants } from '../rules/pf1e-data-tables';
 
 export function formatPF1eStatBlock(block: PF1eStatBlock): string {
   const lines: string[] = [];
@@ -28,9 +28,8 @@ export function formatPF1eStatBlock(block: PF1eStatBlock): string {
     const dexMod = Math.floor(((block.dex ?? 10) - 10) / 2);
     const initVal = block.init_claimed ?? dexMod;
     const initStr = initVal >= 0 ? `+${initVal}` : `${initVal}`;
-    const senses = block.speed_line ? '' : '';
     const perception = (block.perception_claimed !== undefined) ? `+${block.perception_claimed}` : '+0';
-    lines.push(`Init ${initStr}; Senses ${block.senses || ''}; Perception ${perception}`.trim());
+    lines.push(`Init ${initStr}; Perception ${perception}`.trim());
 
   // --- DEFENSE ---
   lines.push('DEFENSE');

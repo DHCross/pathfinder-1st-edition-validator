@@ -1,5 +1,5 @@
 import React from 'react';
-import { PF1eStatBlock, ValidationResult, ValidationMessage } from '../types/PF1eStatBlock';
+import { PF1eStatBlock, ValidationResult } from '../types/PF1eStatBlock';
 import { sortMessages, formatStatusBadgeText } from '../lib/validationHelpers';
 
 interface ValidatorDisplayProps {

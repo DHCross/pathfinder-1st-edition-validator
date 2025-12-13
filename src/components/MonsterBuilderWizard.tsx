@@ -87,7 +87,7 @@ export const MonsterBuilderWizard: React.FC = () => {
 
   // Compute scaled & fixed previews
   const { block: scaled } = scaleCreature(builtRaw, XP_Table[crTarget.toString()] || builtRaw.xp || 400);
-  const { block: fixed, fixes } = autoFixStatBlock(scaled, fixMode);
+  const { block: fixed } = autoFixStatBlock(scaled, fixMode);
 
   // Validation: structural from raw + audited from fixed/raw
   const rawStructural = validateBasics(builtRaw);
