@@ -5,12 +5,12 @@ interface TableToTSVConverterProps {
     defaultInput?: string;
 }
 
-type FormatType = 'auto' | 'markdown' | 'html';
+type FormatType = 'auto' | 'markdown' | 'html' | 'word';
 
 interface ConversionResult {
     output: string;
     tableCount: number;
-    detectedFormat: 'markdown' | 'html';
+    detectedFormat: 'markdown' | 'html' | 'word';
 }
 
 /**
@@ -82,9 +82,62 @@ function extractMarkdownTables(content: string): { header: string; rows: string[
 }
 
 /**
+ * Clean Microsoft Word HTML before parsing
+ * Word adds lots of proprietary markup that interferes with parsing
+ */
+function cleanWordHTML(content: string): string {
+    // Remove XML declarations and doctype
+    content = content.replace(/<\?xml[^>]*\?>/g, '');
+    content = content.replace(/<!DOCTYPE[^>]*>/gi, '');
+    
+    // Remove Office namespace tags like <o:p>, </o:p>, <w:*>, etc.
+    content = content.replace(/<\/?[ovwx]:[^>]*>/g, '');
+    
+    // Remove conditional comments <!--[if ...]-->...<!--[endif]-->
+    content = content.replace(/<!--\[if[^\]]*\]>[\s\S]*?<!\[endif\]-->/g, '');
+    content = content.replace(/<!--\[if[^\]]*\]>/g, '');
+    content = content.replace(/<!\[endif\]-->/g, '');
+    
+    // Remove mso-* styles from style attributes
+    content = content.replace(/mso-[^;"]+;?/g, '');
+    
+    // Remove empty style attributes
+    content = content.replace(/\s+style\s*=\s*["']\s*["']/g, '');
+    
+    // Remove Word-specific class attributes
+    content = content.replace(/\s+class\s*=\s*["']Mso[^"']*["']/g, '');
+    
+    // Remove font tags (Word loves these)
+    content = content.replace(/<\/?font[^>]*>/gi, '');
+    
+    // Remove empty spans
+    content = content.replace(/<span[^>]*>\s*<\/span>/g, '');
+    
+    // Normalize whitespace
+    content = content.replace(/[\r\n]+/g, '\n');
+    
+    return content;
+}
+
+/**
+ * Detect if content is Word HTML
+ */
+function isWordHTML(content: string): boolean {
+    return content.includes('mso-') || 
+           content.includes('<o:p>') || 
+           content.includes('class="Mso') ||
+           content.includes('urn:schemas-microsoft-com');
+}
+
+/**
  * Parse HTML tables from content
  */
-function extractHTMLTables(content: string): { header: string; rows: string[][] }[] {
+function extractHTMLTables(content: string, fromWord: boolean = false): { header: string; rows: string[][] }[] {
+    // Auto-detect and clean Word HTML
+    if (fromWord || isWordHTML(content)) {
+        content = cleanWordHTML(content);
+    }
+    
     const tables: { header: string; rows: string[][] }[] = [];
     const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
     const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
@@ -135,11 +188,17 @@ function extractHTMLTables(content: string): { header: string; rows: string[][] 
 /**
  * Detect format from content
  */
-function detectFormat(content: string): 'markdown' | 'html' {
+function detectFormat(content: string): 'markdown' | 'html' | 'word' {
     const hasHtmlTable = /<table/i.test(content);
     const hasMarkdownTable = /^\s*\|.*\|/m.test(content);
     
-    if (hasHtmlTable) return 'html';
+    if (hasHtmlTable) {
+        // Check if it's Word HTML specifically
+        if (isWordHTML(content)) {
+            return 'word';
+        }
+        return 'html';
+    }
     if (hasMarkdownTable) return 'markdown';
     return 'markdown';
 }
@@ -172,9 +231,15 @@ function formatAsTSV(tables: { header: string; rows: string[][] }[], includeHead
 function convertToTSV(content: string, format: FormatType, includeHeaders: boolean): ConversionResult {
     const detectedFormat = format === 'auto' ? detectFormat(content) : format;
     
-    const tables = detectedFormat === 'html' 
-        ? extractHTMLTables(content)
-        : extractMarkdownTables(content);
+    let tables: { header: string; rows: string[][] }[];
+    
+    if (detectedFormat === 'html') {
+        tables = extractHTMLTables(content, false);
+    } else if (detectedFormat === 'word') {
+        tables = extractHTMLTables(content, true);
+    } else {
+        tables = extractMarkdownTables(content);
+    }
     
     const output = formatAsTSV(tables, includeHeaders);
     
@@ -191,7 +256,7 @@ export const TableToTSVConverter: React.FC<TableToTSVConverterProps> = ({ defaul
     const [format, setFormat] = useState<FormatType>('auto');
     const [includeHeaders, setIncludeHeaders] = useState(true);
     const [tableCount, setTableCount] = useState(0);
-    const [detectedFormat, setDetectedFormat] = useState<'markdown' | 'html' | null>(null);
+    const [detectedFormat, setDetectedFormat] = useState<'markdown' | 'html' | 'word' | null>(null);
     const [copied, setCopied] = useState(false);
 
     const handleConvert = useCallback(() => {
@@ -232,7 +297,7 @@ export const TableToTSVConverter: React.FC<TableToTSVConverterProps> = ({ defaul
             <div className="converter-header">
                 <h2>Table to TSV Converter</h2>
                 <p className="converter-description">
-                    Paste Markdown or HTML tables to convert them to tab-delimited format for InDesign import.
+                    Paste Markdown, HTML, or Word tables to convert them to tab-delimited format for InDesign import.
                 </p>
             </div>
 
@@ -247,6 +312,7 @@ export const TableToTSVConverter: React.FC<TableToTSVConverterProps> = ({ defaul
                         <option value="auto">Auto-detect</option>
                         <option value="markdown">Markdown</option>
                         <option value="html">HTML</option>
+                        <option value="word">Word (paste from Word)</option>
                     </select>
                 </div>
                 
@@ -275,7 +341,7 @@ export const TableToTSVConverter: React.FC<TableToTSVConverterProps> = ({ defaul
                 <div className="panel input-panel">
                     <div className="panel-header">
                         <h3>Input</h3>
-                        <span className="format-hint">Paste Markdown or HTML table</span>
+                        <span className="format-hint">Paste Markdown, HTML, or Word table</span>
                     </div>
                     <textarea
                         value={input}
@@ -288,11 +354,8 @@ Markdown example:
 | AC   | 15    |
 | HP   | 45    |
 
-HTML example:
-<table>
-  <tr><td>AC</td><td>15</td></tr>
-  <tr><td>HP</td><td>45</td></tr>
-</table>`}
+HTML/Word: Just copy a table from Word or a webpage and paste it here.
+Word tables are auto-detected and cleaned up.`}
                         spellCheck={false}
                     />
                 </div>

@@ -4,7 +4,9 @@ HTML Table to Tab-Delimited Converter
 =====================================
 
 Converts HTML tables to tab-delimited format for InDesign import.
-Specifically designed for Pathfinder 1st Edition statblocks copied from web sources.
+Specifically designed for Pathfinder 1st Edition statblocks copied from:
+- Web sources
+- Microsoft Word (handles Word's messy HTML clipboard format)
 
 Usage:
     python3 tools/html_table_to_tsv.py input.html -o output.txt
@@ -21,6 +23,52 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 from html.parser import HTMLParser
+
+
+def clean_word_html(content: str) -> str:
+    """
+    Clean up Microsoft Word's messy HTML before parsing.
+    
+    Word adds lots of proprietary markup that can interfere with parsing:
+    - <o:p> tags (Office namespace)
+    - mso-* CSS styles
+    - Conditional comments <!--[if ...]-->
+    - Extra spans and formatting
+    """
+    # Remove XML declarations and doctype
+    content = re.sub(r'<\?xml[^>]*\?>', '', content)
+    content = re.sub(r'<!DOCTYPE[^>]*>', '', content, flags=re.IGNORECASE)
+    
+    # Remove Office namespace tags like <o:p>, </o:p>, <w:*>, etc.
+    content = re.sub(r'</?[ovwx]:[^>]*>', '', content)
+    
+    # Remove conditional comments <!--[if ...]-->...<!--[endif]-->
+    content = re.sub(r'<!--\[if[^\]]*\]>.*?<!\[endif\]-->', '', content, flags=re.DOTALL)
+    content = re.sub(r'<!--\[if[^\]]*\]>', '', content)
+    content = re.sub(r'<!\[endif\]-->', '', content)
+    
+    # Remove mso-* styles from style attributes
+    content = re.sub(r'mso-[^;"]+;?', '', content)
+    
+    # Remove empty style attributes
+    content = re.sub(r'\s+style\s*=\s*["\']\s*["\']', '', content)
+    
+    # Remove Word-specific class attributes
+    content = re.sub(r'\s+class\s*=\s*["\']Mso[^"\']*["\']', '', content)
+    
+    # Clean up extra whitespace in tags
+    content = re.sub(r'<(\w+)\s+>', r'<\1>', content)
+    
+    # Remove font tags (Word loves these)
+    content = re.sub(r'</?font[^>]*>', '', content, flags=re.IGNORECASE)
+    
+    # Remove empty spans
+    content = re.sub(r'<span[^>]*>\s*</span>', '', content)
+    
+    # Normalize whitespace
+    content = re.sub(r'[\r\n]+', '\n', content)
+    
+    return content
 
 
 class HTMLTableParser(HTMLParser):
@@ -113,13 +161,23 @@ class HTMLTableParser(HTMLParser):
                 self.current_cell += f'&#{name};'
 
 
-def extract_tables_from_html(content: str) -> List[Tuple[str, List[List[str]]]]:
+def extract_tables_from_html(content: str, from_word: bool = False) -> List[Tuple[str, List[List[str]]]]:
     """
     Extract all HTML tables from content.
+    
+    Args:
+        content: HTML content
+        from_word: If True, apply Word-specific HTML cleaning first
     
     Returns:
         List of tuples: (table_header, table_rows)
     """
+    # Auto-detect Word HTML by looking for telltale signs
+    is_word_html = from_word or 'mso-' in content or '<o:p>' in content or 'class="Mso' in content
+    
+    if is_word_html:
+        content = clean_word_html(content)
+    
     parser = HTMLTableParser()
     
     try:
@@ -173,18 +231,19 @@ def format_as_tsv(tables: List[Tuple[str, List[List[str]]]],
     return '\n'.join(output_lines)
 
 
-def convert_html(content: str, include_headers: bool = True) -> str:
+def convert_html(content: str, include_headers: bool = True, from_word: bool = False) -> str:
     """
     Convert HTML content to tab-delimited format.
     
     Args:
         content: HTML content with tables
         include_headers: Include section headers
+        from_word: Force Word HTML cleaning (auto-detected if not specified)
     
     Returns:
         Tab-delimited string
     """
-    tables = extract_tables_from_html(content)
+    tables = extract_tables_from_html(content, from_word=from_word)
     return format_as_tsv(tables, include_headers)
 
 
