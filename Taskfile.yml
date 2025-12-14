@@ -39,6 +39,18 @@ tasks:
     cmds:
       - npm run storybook
 
+  storybook:kill:
+    desc: "Kill the Storybook dev server (port 6006)"
+    cmds:
+      - lsof -ti:6006 | xargs kill -9 2>/dev/null || echo "No Storybook server running on port 6006"
+    silent: true
+
+  storybook:restart:
+    desc: "Restart Storybook (kill then start)"
+    cmds:
+      - task: storybook:kill
+      - task: storybook
+
   storybook:build:
     desc: "Build the static Storybook bundle"
     cmds:
