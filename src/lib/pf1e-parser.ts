@@ -36,10 +36,40 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
     type: 'Humanoid' as CreatureType,
   };
 
+  // Preserve the cleaned raw text for downstream detectors
+  (block as any).raw_text = fullText;
+
   // --- 1. SECTION EXTRACTION (Preserving the Soul) ---
   
   const meleeMatch = fullText.match(/Melee\s+(.+?)(?=\n|Ranged|Space|Special|Str|Statistic)/i);
   if (meleeMatch) block.melee_line = "Melee " + meleeMatch[1].trim();
+
+    // Parse hybrid melee lines like: "Melee Bite +4 (1d10 + 2 + Grapple Reflex DC 13)"
+    if (block.melee_line) {
+      const attacks: Array<{ name: string; toHit?: number; damage?: string; effect?: string }> = [];
+      // Split multiple attacks by "," but keep parenthetical groups intact
+      const parts = block.melee_line.replace(/^Melee\s+/i, '').split(/,\s*/);
+      for (const p of parts) {
+        // Name and to-hit
+        const m = p.match(/^(?<name>[A-Za-z\-\s]+)\s*\+?(?<to>[-+]?\d+)?\s*(?:\((?<paren>.*)\))?/i);
+        if (!m || !m.groups) continue;
+        const name = (m.groups['name'] || '').trim();
+        const toHit = m.groups['to'] ? parseInt(m.groups['to']) : undefined;
+        let damage: string | undefined = undefined;
+        let effect: string | undefined = undefined;
+        if (m.groups['paren']) {
+          const inner = m.groups['paren'];
+          // Damage is typically the first dice expression inside parentheses
+          const dmgMatch = inner.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
+          if (dmgMatch) damage = dmgMatch[1].replace(/\s+/g, '');
+          // Anything after the damage (e.g., "+ Grapple Reflex DC 13") is effect text
+          const after = inner.replace(dmgMatch ? dmgMatch[0] : '', '').trim();
+          if (after) effect = after.replace(/^\+\s*/,'').trim();
+        }
+        attacks.push({ name, toHit, damage, effect });
+      }
+      (block as any).meleeAttacks = attacks;
+    }
 
   const rangedMatch = fullText.match(/Ranged\s+(.+?)(?=\n|Space|Special|Str|Statistic)/i);
   if (rangedMatch) block.ranged_line = "Ranged " + rangedMatch[1].trim();

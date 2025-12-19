@@ -25,6 +25,53 @@ export function autoFixStatBlock(broken: PF1eStatBlock, mode: FixMode = 'enforce
     }
   };
 
+  // --- AUTO-FIX: Terminology (System Bleed) ---
+  // Suggest or apply replacements for common D&D5e terms found in PF1e stat blocks
+  const terminologyReplacements: Array<{ find: RegExp; replace: string; reason: string; fieldHints?: string[] }> = [
+    { find: /\bWisdom Save(s)?\b/ig, replace: 'Will Save', reason: 'PF1e uses Will saves instead of "Wisdom Save"' },
+    { find: /\bDexterity Save(s)?\b/ig, replace: 'Reflex Save', reason: 'PF1e uses Reflex saves instead of "Dexterity Save"' },
+    { find: /\bConstitution Save(s)?\b/ig, replace: 'Fortitude Save', reason: 'PF1e uses Fortitude saves instead of "Constitution Save"' },
+    { find: /\bBonus Action\b/ig, replace: 'Swift Action', reason: 'PF1e uses Swift Action for bonus-like uses' },
+    { find: /\bReaction\b/ig, replace: 'Immediate Action', reason: 'PF1e uses Immediate Action or AoO semantics' },
+    { find: /\bAction\b/ig, replace: 'Standard Action', reason: 'Prefer explicit "Standard Action" wording' },
+    { find: /\bDeception\b/ig, replace: 'Bluff', reason: 'PF1e uses Bluff' },
+    { find: /\bPersuasion\b/ig, replace: 'Diplomacy', reason: 'PF1e uses Diplomacy/Intimidate' },
+    { find: /\bInsight\b/ig, replace: 'Sense Motive', reason: 'PF1e uses Sense Motive' },
+    { find: /\bAthletics\b/ig, replace: 'Climb/Swim', reason: 'PF1e splits Athletics into Climb/Swim/etc.' },
+  ];
+
+  const applyTerminologyFixesToField = (fieldName: string, value: string | undefined) => {
+    if (!value) return value;
+    let v = value;
+    for (const t of terminologyReplacements) {
+      if (t.find.test(v)) {
+        const newV = v.replace(t.find, t.replace);
+        if (newV !== v) {
+          logChange(`${fieldName} (terminology)`, v, newV, t.reason);
+          v = newV;
+        }
+      }
+    }
+    return v;
+  };
+
+  // Apply to text fields we preserve
+  fixed.special_abilities_block = applyTerminologyFixesToField('special_abilities_block', fixed.special_abilities_block as any) as any;
+  fixed.melee_line = applyTerminologyFixesToField('melee_line', fixed.melee_line as any) as any;
+  fixed.skills_line = applyTerminologyFixesToField('skills_line', fixed.skills_line as any) as any;
+  if (fixed.feats && fixed.feats.length) {
+    const newFeats = fixed.feats.map(f => {
+      let nf = f;
+      for (const t of terminologyReplacements) nf = nf.replace(t.find, t.replace);
+      return nf.trim();
+    });
+    // If feats changed, log
+    if (newFeats.join('|') !== (fixed.feats || []).join('|')) {
+      logChange('Feats (terminology)', (fixed.feats || []).join(', '), newFeats.join(', '), 'Normalize skill/save/action names to PF1e equivalents');
+      fixed.feats = newFeats;
+    }
+  }
+
   // --- MODE: ENFORCE CR (Down-Scaling) ---
   // If we must hit CR 1, we slash the HD first.
   if (mode === 'enforce_cr') {

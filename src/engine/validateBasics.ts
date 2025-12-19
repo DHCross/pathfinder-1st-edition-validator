@@ -1,5 +1,6 @@
 import { PF1eStatBlock, ValidationResult, ValidationMessage } from '../types/PF1eStatBlock';
 import { SizeConstants, ClassStatistics, XP_Table, CreatureTypeRules, MonsterStatisticsByCR } from '../rules/pf1e-data-tables'; 
+import { detectSystemBleed } from './systemBleedDetector';
 
 export function validateBasics(block: PF1eStatBlock): ValidationResult {
   const messages: ValidationMessage[] = [];
@@ -235,6 +236,20 @@ export function validateBasics(block: PF1eStatBlock): ValidationResult {
             expected: 'Varies',
             actual: `All baselines`,
         });
+    }
+
+    // --- 9. SYSTEM BLEED DETECTION (D&D 5e Terms) ---
+    try {
+        const bleed = detectSystemBleed(block as PF1eStatBlock);
+        if (bleed && bleed.length) {
+            for (const m of bleed) {
+                messages.push(m);
+                if (m.severity === 'critical') isCritical = true;
+            }
+        }
+    } catch (e) {
+        // Swallow detection errors — non-fatal for validation
+        messages.push({ category: 'system-bleed', severity: 'note', message: `System-bleed detection failed: ${(e as any)?.message || e}` });
     }
 
   return {

@@ -1,5 +1,5 @@
 import type { PF1eStatBlock, ValidationResult, ValidationMessage } from '../types/PF1eStatBlock';
-import { MonsterStatisticsByCR } from '../rules/pf1e-data-tables';
+import { MonsterStatisticsByCR, CreatureTypeRules, SizeConstants } from '../rules/pf1e-data-tables';
 
 /**
  * Validates a creature's stats against Bestiary 1 benchmarks.
@@ -28,30 +28,35 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
   let hpStatus: 'high' | 'low' | 'ok' = 'ok';
   let acStatus: 'high' | 'low' | 'ok' = 'ok';
 
-  // 1. Validate HP (The "Glass Jaw" Check)
   const hpClaimed = block.hp_claimed ?? block.hp ?? undefined;
+  // Deep HP verification using HD + CON mod
+  const hdFromBlock = (block.racialHD || 0) + ((block.classLevels || []).reduce ? (block.classLevels || []).reduce((s: number, c: any) => s + (c.level || 0), 0) : 0);
   if (hpClaimed !== undefined && typeof hpClaimed === 'number') {
-    const hpPercent = hpClaimed / benchmarks.hp;
+    // Determine hit die type from creature type if available
+    const typeRule = CreatureTypeRules[block.type] || { hitDieType: 8 } as any;
+    const hitDie = typeRule.hitDieType || 8;
+    const avgDie = (hitDie / 2) + 0.5;
+    const conMod = Math.floor(((block.con || 10) - 10) / 2);
+    const expectedHPfromHD = hdFromBlock > 0 ? Math.floor(avgDie * hdFromBlock) + (conMod * hdFromBlock) : undefined;
 
-    if (hpPercent < 0.7) {
-      hpStatus = 'low';
-      messages.push({
-        severity: 'warning',
-        category: 'benchmarks',
-        message: `HP ${hpClaimed} is very low for CR ${block.cr}. Standard is ~${benchmarks.hp}. Creature may be too fragile.`,
-        expected: benchmarks.hp,
-        actual: hpClaimed
-      });
-    } else if (hpPercent > 1.5) {
-      hpStatus = 'high';
-      messages.push({
-        severity: 'warning',
-        category: 'benchmarks',
-        message: `HP ${hpClaimed} is very high for CR ${block.cr}. Standard is ~${benchmarks.hp}. This is a "Damage Sponge."`,
-        expected: benchmarks.hp,
-        actual: hpClaimed
-      });
+    if (expectedHPfromHD !== undefined) {
+      const deltaPerHD = Math.abs(hpClaimed - expectedHPfromHD) / Math.max(1, hdFromBlock);
+      if (deltaPerHD > 2) {
+        messages.push({
+          severity: 'warning',
+          category: 'benchmarks',
+          message: `HP ${hpClaimed} deviates from expected HP ${expectedHPfromHD} by more than ±2 per HD (calculated using ${hdFromBlock} HD and d${hitDie}).`,
+          expected: expectedHPfromHD,
+          actual: hpClaimed
+        });
+        hpStatus = deltaPerHD > 4 ? 'low' : 'ok';
+      }
     }
+
+    // Fallback: compare to CR benchmark broadly
+    const hpPercent = hpClaimed / benchmarks.hp;
+    if (hpPercent < 0.7) hpStatus = 'low';
+    else if (hpPercent > 1.5) hpStatus = 'high';
   }
 
   // 2. Validate AC (The "Unhittable" Check)
@@ -116,6 +121,41 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
         });
       }
     }
+  }
+
+  // 4. BAB & CMB verification (recalculate using PF1e progressions)
+  try {
+    const totalHD = hdFromBlock || 0;
+    let expectedBAB = 0;
+    // Racial HD progression
+    if (block.racialHD && block.racialHD > 0) {
+      const prog = CreatureTypeRules[block.type]?.babProgression || 'medium';
+      if (prog === 'fast') expectedBAB += block.racialHD;
+      else if (prog === 'medium') expectedBAB += Math.floor(block.racialHD * 0.75);
+      else expectedBAB += Math.floor(block.racialHD * 0.5);
+    }
+    // Class levels
+    for (const cls of block.classLevels || []) {
+      // class-level BAB progression lookup fallback uses medium if unknown
+      const cProg = (CreatureTypeRules[(cls.className as any)] && CreatureTypeRules[(cls.className as any)].babProgression) || 'medium';
+      if (cProg === 'fast') expectedBAB += cls.level || 0;
+      else if (cProg === 'medium') expectedBAB += Math.floor((cls.level || 0) * 0.75);
+      else expectedBAB += Math.floor((cls.level || 0) * 0.5);
+    }
+
+    if (block.bab_claimed !== undefined && block.bab_claimed !== expectedBAB) {
+      messages.push({ severity: 'warning', category: 'benchmarks', message: `BAB claimed +${block.bab_claimed} differs from recalculated BAB +${expectedBAB} given type ${block.type} and ${totalHD} HD.`, expected: expectedBAB, actual: block.bab_claimed });
+    }
+
+    // CMB check
+    const strMod = Math.floor(((block.str || 10) - 10) / 2);
+    const sizeMod = (SizeConstants[block.size as string] || { cmbCmdMod: 0 }).cmbCmdMod || 0;
+    const expectedCMB = expectedBAB + strMod + sizeMod;
+    if (block.cmb !== undefined && block.cmb !== expectedCMB) {
+      messages.push({ severity: 'warning', category: 'benchmarks', message: `CMB ${block.cmb} differs from expected ${expectedCMB} (BAB ${expectedBAB} + Str ${strMod} + Size ${sizeMod}).`, expected: expectedCMB, actual: block.cmb });
+    }
+  } catch (e) {
+    // ignore
   }
 
   // --- NEW: CR/SIZE ALIGNMENT CHECK ---

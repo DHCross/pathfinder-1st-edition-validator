@@ -7,5 +7,8 @@
 			"path": "../TRPG Workbench Editor"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"sortable-explorer.viewMode": "tree",
+		"sortable-explorer.sortBy": "created"
+	}
 }

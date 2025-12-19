@@ -84,6 +84,8 @@ export interface PF1eStatBlock {
   equipment_line?: string;
   special_abilities_block?: string;
   speed_line?: string;
+  // Parsed attack objects for deeper analysis
+  meleeAttacks?: Array<{ name: string; toHit?: number; damage?: string; effect?: string }>;
 }
 
 // Traffic Light System
