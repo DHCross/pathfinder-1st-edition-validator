@@ -1,4 +1,4 @@
-import{r as i,R as t}from"./iframe-v5RryJ75.js";import"./preload-helper-PPVm8Dsz.js";function k(e){const l=e.trim().split(`
+import{r as i,R as t}from"./iframe-BrWmImZI.js";import"./preload-helper-PPVm8Dsz.js";function k(e){const l=e.trim().split(`
 `).filter(a=>a.trim()),r=[];for(const a of l){if(/^\|[\s:\-|]+\|$/.test(a.trim()))continue;const s=a.trim().replace(/^\||\|$/g,"").split("|").map(o=>o.trim());r.push(s)}return r}function I(e){const l=e.split(`
 `),r=[];let a=[],n="",s=!1;for(let o=0;o<l.length;o++)if(l[o].trim().startsWith("|")){if(!s){for(let u=o-1;u>=Math.max(0,o-10);u--){const c=l[u].trim();if(c.startsWith("#")||c.startsWith("**")){n=c.replace(/^#+\s*/,"").replace(/\*\*/g,"").trim();break}}s=!0}a.push(l[o])}else if(s){if(a.length>0){const u=k(a.join(`
 `));r.push({header:n,rows:u}),a=[],n=""}s=!1}if(a.length>0){const o=k(a.join(`
