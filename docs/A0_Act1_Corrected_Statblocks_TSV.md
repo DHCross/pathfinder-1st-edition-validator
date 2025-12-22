@@ -54,14 +54,14 @@ Special Abilities	Hop (Ex), Keen Hearing (Ex)
 
 ## Day 3: The Watchful Rest (Social/Safe Zone)
 
-### Brintus CR 3
+### Brintus CR 6
 
-> **Encounter Context:** Day 3 – Arrival at the fortified caravanserai. Dealing with strict Guest Rights laws and the hobgoblin security detail.
+> **Encounter Context:** Day 3 – Arrival at the fortified caravanserai. Brintus serves as an overwhelming mechanical deterrent to enforce Guest Rights. Combat with him means certain death; the law is enforced through inevitability.
 
 Field	Value
 Name	Brintus
-CR	3
-XP	800
+CR	6
+XP	2,400
 Class	Hobgoblin Warrior 8
 Alignment	LN
 Size	Medium
@@ -70,7 +70,7 @@ Init	+1
 Senses	Darkvision 60ft., Perception +4
 AC	18, touch 11, flat-footed 17
 AC Breakdown	+6 armor, +1 Dex, +1 natural
-HP	30 (4d8+12)
+HP	60 (8d8+24)
 Fort	+6
 Ref	+2
 Will	+2
@@ -85,7 +85,7 @@ Cha	13
 Base Atk	+8/+3
 CMB	+12
 CMD	23 (25 vs. sunder)
-Feats	Alertness, Cleave, Improved Sunder, Power Attack
+Feats	Alertness, Cleave, Improved Critical (Battleaxe), Improved Sunder, Power Attack, Two-Weapon Fighting, Weapon Focus (Battleaxe)
 Skills	Acrobatics +6, Intimidation +3, Knowledge (History) +3, Sense Motive +4
 Languages	Hobgoblin, Common (Velossan)
 Equipment	Silvered battleaxe, silvered shortsword, silvered chainmail, amulet of natural armor +1, personal kit (whetstone, boot polish, cleaning rag, flask of bitter spirits, 35gp)
@@ -585,7 +585,7 @@ Equipment	Travel-stained brown robes, light green cloak (dusty/patched), ledger,
 
 Name	CR	XP	Size	Type	HP	AC	Day	Encounter
 Mutant Rabbits	1/4	100	Medium	Chaos-Beast	9	13	Day 2	Hunting/Survival
-Brintus	3	800	Medium	Humanoid	30	18	Day 3	Watchful Rest
+Brintus	6	2400	Medium	Humanoid	60	18	Day 3	Watchful Rest
 Maltorio	5	1600	Medium	Fiend (Devil)	35	16	Day 3	Watchful Rest
 Elemara	5	1600	Medium	Magical Beast	55	15	Day 3	Watchful Rest
 Vickus, Pit Champion	2	600	Medium	Humanoid	22	17	Day 3	Fighting Pit

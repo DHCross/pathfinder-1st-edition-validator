@@ -585,9 +585,9 @@ SPECIAL ABILITIES
 
 #### Brintus
 
-**Brintus CR 3**
+**Brintus CR 6**
 
-**XP 800**  
+**XP 2,400**  
 Hobgoblin Warrior 8  
 LN Medium Humanoid  
 **Init** \+1; **Senses** Darkvision 60ft., Perception \+4
@@ -595,7 +595,7 @@ LN Medium Humanoid
 DEFENSE
 
 **AC** 18, touch 11 flat-footed 17, (+6 armor, \+1 dex, \+1 natural)  
-**HP** 30 (4d8 \+ 12\)  
+**HP** 60 (8d8 \+ 24\)  
 **Fort** \+6, **Ref** \+2 **Will** \+2
 
 OFFENSE
@@ -607,15 +607,7 @@ STATISTICS
 
 **Str** 18, **Dex** 12, **Con** 16, **Int** 11, **Wis** 14, **Cha** 13  
 **Base Atk** \+8/+3; **CMB** \+12; **CMD** 23 (25 vs. sunder)  
-**Feats** Alertness, Cleave, Improved Sunder, Power Attack  
-**Skills** Acrobatics \+6, Intimidation \+3, Knowledge (History) \+3, Sense Motive \+4  
-**Languages** Hobgoblin, Common (Velossan)  
-**Equipment** Silvered battleaxe, silvered shortsword, silvered chainmail, amulet of natural armor \+1, personal kit (whetstone, boot polish, cleaning rag, flask of bitter spirits, 35gp)
-
-SPECIAL ABILITIES
-
-**Tactical Commander (Ex) (Recharge 5-6)** As a Swift Action, Brintus can command up to two creatures of his choice within 30ft. that can hear him, allowing them to immediately use their reaction to move up to half their speed or make a weapon attack.  
-**Martial Discipline (Ex)** Brintus and allied creatures within 10 ft. that can see and hear him receive a \+5 bonus to saving throws against becoming frightened.
+**Feats** Alertness, Cleave, Improved Critical (Battleaxe), Improved Sunder, Power Attack, Two-Weapon Fighting, Weapon Focus (Battleaxe)
 
 #### Maltorio
 
