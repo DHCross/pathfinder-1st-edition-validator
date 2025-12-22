@@ -11,8 +11,52 @@ import { MonsterStatisticsByCR, CreatureTypeRules, SizeConstants } from '../rule
 export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult {
   const messages: ValidationMessage[] = [];
 
-  // Get CR as number for lookup
+  // Get CR as number for lookup (needed for exception detection)
   const crValue = typeof block.cr === 'number' ? block.cr : parseInt(String(block.cr), 10);
+  
+  // --- ENCOUNTER EXCEPTION CHECK ---
+  // If a creature is flagged as "not meant to be fought", skip benchmark validation.
+  // This is for world-building NPCs/monsters that exist for realism, not combat balance.
+  if (block.encounterException === true) {
+    const typeLabel = block.encounterExceptionType ? `[${block.encounterExceptionType.toUpperCase()}]` : '';
+    const reason = block.encounterExceptionReason || 'Flagged as non-combat encounter (world-building / scenery creature)';
+    messages.push({
+      severity: 'note',
+      category: 'benchmarks',
+      message: `⚠️ ENCOUNTER EXCEPTION ${typeLabel}: ${block.name || 'Creature'} (CR ${block.cr}) — ${reason}. Benchmark validation skipped.`,
+    });
+    return { valid: true, messages, status: 'PASS' } as any;
+  }
+
+  // --- AUTO-DETECT LEVEL MISMATCH (suggest exceptions) ---
+  // If partyLevel or adventureLevelRange is set, detect significant CR mismatches.
+  const partyLevel = block.partyLevel ?? block.adventureLevelRange?.min;
+  if (partyLevel !== undefined && !isNaN(crValue)) {
+    const crDelta = crValue - partyLevel;
+    
+    // OVERPOWERED: CR is 5+ above party level (e.g., CR 15 dragon in level 3 adventure)
+    if (crDelta >= 5) {
+      messages.push({
+        severity: 'warning',
+        category: 'benchmarks',
+        message: `🐉 POSSIBLE EXCEPTION (OVERPOWERED): ${block.name || 'Creature'} is CR ${block.cr} but party level is ${partyLevel}. If this is a "flee or die" / scenery creature, consider setting encounterException: true with encounterExceptionType: 'overpowered'.`,
+        expected: `CR ~${partyLevel - 1} to ${partyLevel + 3}`,
+        actual: crValue
+      });
+    }
+    
+    // TRIVIAL: CR is 4+ below party level (e.g., CR 1 guards in level 10 adventure)
+    if (crDelta <= -4) {
+      messages.push({
+        severity: 'warning',
+        category: 'benchmarks', 
+        message: `🛡️ POSSIBLE EXCEPTION (TRIVIAL): ${block.name || 'Creature'} is CR ${block.cr} but party level is ${partyLevel}. If these are "realistic" world-building NPCs (guards, commoners), consider setting encounterException: true with encounterExceptionType: 'trivial'.`,
+        expected: `CR ~${partyLevel - 3} to ${partyLevel + 3}`,
+        actual: crValue
+      });
+    }
+  }
+
   if (isNaN(crValue)) {
     return { valid: true, messages, status: 'PASS' } as any;
   }

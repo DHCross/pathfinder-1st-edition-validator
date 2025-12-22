@@ -6,6 +6,7 @@ import BestiaryArchitectApp from './modules/BestiaryArchitectApp';
 import { ValidatorPlayground } from './components/ValidatorPlayground';
 import { CreatureScaler } from './components/CreatureScaler';
 import TableToTSVConverter from './components/TableToTSVConverter';
+import { DocumentValidator } from './components/DocumentValidator';
 import { PF1eStatBlock } from './types/PF1eStatBlock';
 
 import './styles/app.css';
@@ -32,7 +33,7 @@ const DEFAULT_SCALER_BLOCK: PF1eStatBlock = {
   racialHD: 2,
 };
 
-type ModuleKey = 'validator' | 'architect' | 'scaler' | 'converter';
+type ModuleKey = 'validator' | 'document-validator' | 'architect' | 'scaler' | 'converter';
 
 interface ModuleInfo {
   key: ModuleKey;
@@ -49,6 +50,13 @@ const MODULES: ModuleInfo[] = [
     label: 'Stat Block Validator',
     icon: '🔍',
     description: 'Paste & validate PF1e stat blocks against Bestiary benchmarks',
+  },
+  {
+    key: 'document-validator',
+    path: '/document-validator',
+    label: 'Document Validator',
+    icon: '📄',
+    description: 'Validate all stat blocks in a Markdown adventure document',
   },
   {
     key: 'architect',
@@ -135,6 +143,7 @@ function App() {
 
           {/* Module routes */}
           <Route path="/validator" element={<ValidatorPlayground />} />
+          <Route path="/document-validator" element={<DocumentValidator />} />
           <Route path="/architect" element={<BestiaryArchitectApp />} />
           <Route path="/scaler" element={<CreatureScaler initialBlock={DEFAULT_SCALER_BLOCK} />} />
           <Route path="/converter" element={<TableToTSVConverter />} />

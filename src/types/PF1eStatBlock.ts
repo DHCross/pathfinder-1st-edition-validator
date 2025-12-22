@@ -56,6 +56,24 @@ export interface PF1eStatBlock {
   economicTier?: EconomicTier;
   treasureType?: 'None' | 'Incidental' | 'Standard' | 'Double' | 'Triple' | 'NPC Gear';
   gearValue?: number; // Total market value of all gear in gp
+
+  // Encounter Context (for adventure-level validation)
+  // Set these when validating creatures in context of an adventure or encounter series.
+  partyLevel?: number; // Expected party level for this adventure/encounter
+  adventureLevelRange?: { min: number; max: number }; // e.g., { min: 5, max: 8 } for a level 5-8 adventure
+
+  // Encounter Exception Flags
+  // Mark creatures that exist for world-building but are NOT meant to be fought.
+  // Works BOTH ways:
+  //   - High CR in low-level adventure: "Huge red dragon in town square" (flee or die)
+  //   - Low CR in high-level adventure: "City guards" (realistic but trivial)
+  encounterException?: boolean;
+  encounterExceptionType?: 'overpowered' | 'trivial' | 'scenery' | 'plot-armor'; 
+  // 'overpowered': CR way above party level (dragon in low-level town)
+  // 'trivial': CR way below party level (guards in high-level adventure)  
+  // 'scenery': Not meant to be interacted with combat-wise
+  // 'plot-armor': NPC that cannot be killed for story reasons
+  encounterExceptionReason?: string; // e.g., "Realistic city guards - not a real threat"
   
   // Claim fields for validation results
   claimedLevel?: number;
