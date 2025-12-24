@@ -77,7 +77,7 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
   const hdFromBlock = (block.racialHD || 0) + ((block.classLevels || []).reduce ? (block.classLevels || []).reduce((s: number, c: any) => s + (c.level || 0), 0) : 0);
   if (hpClaimed !== undefined && typeof hpClaimed === 'number') {
     // Determine hit die type from creature type if available
-    const typeRule = CreatureTypeRules[block.type] || { hitDieType: 8 } as any;
+      const typeRule = CreatureTypeRules[block.type as keyof typeof CreatureTypeRules] || { hitDieType: 8 as const };
     const hitDie = typeRule.hitDieType || 8;
     const avgDie = (hitDie / 2) + 0.5;
     const conMod = Math.floor(((block.con || 10) - 10) / 2);
@@ -173,7 +173,7 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
     let expectedBAB = 0;
     // Racial HD progression
     if (block.racialHD && block.racialHD > 0) {
-      const prog = CreatureTypeRules[block.type]?.babProgression || 'medium';
+      const prog = CreatureTypeRules[block.type as keyof typeof CreatureTypeRules]?.babProgression || 'medium';
       if (prog === 'fast') expectedBAB += block.racialHD;
       else if (prog === 'medium') expectedBAB += Math.floor(block.racialHD * 0.75);
       else expectedBAB += Math.floor(block.racialHD * 0.5);
@@ -181,7 +181,7 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
     // Class levels
     for (const cls of block.classLevels || []) {
       // class-level BAB progression lookup fallback uses medium if unknown
-      const cProg = (CreatureTypeRules[(cls.className as any)] && CreatureTypeRules[(cls.className as any)].babProgression) || 'medium';
+        const cProg = (CreatureTypeRules[cls.className as keyof typeof CreatureTypeRules] && CreatureTypeRules[cls.className as keyof typeof CreatureTypeRules].babProgression) || 'medium';
       if (cProg === 'fast') expectedBAB += cls.level || 0;
       else if (cProg === 'medium') expectedBAB += Math.floor((cls.level || 0) * 0.75);
       else expectedBAB += Math.floor((cls.level || 0) * 0.5);
@@ -193,7 +193,7 @@ export function validateBenchmarks(block: PF1eStatBlock | any): ValidationResult
 
     // CMB check
     const strMod = Math.floor(((block.str || 10) - 10) / 2);
-    const sizeMod = (SizeConstants[block.size as string] || { cmbCmdMod: 0 }).cmbCmdMod || 0;
+      const sizeMod = (SizeConstants[block.size as keyof typeof SizeConstants] || { cmbCmdMod: 0 }).cmbCmdMod || 0;
     const expectedCMB = expectedBAB + strMod + sizeMod;
     if (block.cmb !== undefined && block.cmb !== expectedCMB) {
       messages.push({ severity: 'warning', category: 'benchmarks', message: `CMB ${block.cmb} differs from expected ${expectedCMB} (BAB ${expectedBAB} + Str ${strMod} + Size ${sizeMod}).`, expected: expectedCMB, actual: block.cmb });

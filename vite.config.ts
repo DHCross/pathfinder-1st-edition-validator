@@ -4,6 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  base: '/pathfinder-1st-edition-validator/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

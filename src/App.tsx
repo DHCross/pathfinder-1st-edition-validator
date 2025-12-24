@@ -98,7 +98,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           <NavLink
             key={mod.key}
             to={mod.path}
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              className={({ isActive }: { isActive: boolean }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             <span className="nav-icon">{mod.icon}</span>
             {!collapsed && (
