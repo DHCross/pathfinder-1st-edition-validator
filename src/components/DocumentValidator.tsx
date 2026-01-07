@@ -33,13 +33,17 @@ function extractStatBlocks(content: string): { text: string; line: number }[] {
   let startLine = 0;
   let inBlock = false;
 
-  // Matches: **Name CR 1**, *Name CR 1/2*, Name CR 3, etc.
-  const startRegex = /^[*_]*([^\*_]+?)[*_]*\s+CR\s+([0-9\/]+)/i;
+  // Matches multiple formats:
+  // - **Name CR 1**, *Name CR 1/2*, Name CR 3
+  // - **Name (CR 1)**, *Name (CR 1/2)*, Name (CR 3)
+  // - ### **Name (CR 2\)**
+  const startRegex = /^[#*_\s]*([^\*_\(\)]+?)(?:\s*\(\s*CR\s+([0-9\/]+)\s*\))?[\*_]*\s*(?:\(\s*CR\s+([0-9\/]+)\s*\)|\s+CR\s+([0-9\/]+))/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
+    const match = line.match(startRegex);
 
-    if (startRegex.test(line)) {
+    if (match) {
       if (inBlock && currentBlock.length > 0) {
         blocks.push({ text: currentBlock.join('\n'), line: startLine });
       }
