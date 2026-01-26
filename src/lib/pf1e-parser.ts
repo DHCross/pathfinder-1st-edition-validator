@@ -122,6 +122,43 @@ export function parsePF1eStatBlock(rawText: string): PF1eStatBlock {
     else if (/Undead/i.test(rawType)) block.type = 'Undead';
     else if (/Beast/i.test(rawType)) block.type = 'Magical Beast';
     else block.type = rawType.split(' ')[0] as CreatureType;
+  } else {
+    // Fallback: Parse labeled fields (e.g., "Aln: NE Size: H Type: Magical Beast Sub: Mutant")
+    const alnMatch = fullText.match(/Aln:\s*([A-Z]+)/i);
+    if (alnMatch) block.alignment = alnMatch[1];
+
+    const sizeMatch = fullText.match(/Size:\s*([A-Z][a-z]*)/i);
+    if (sizeMatch) {
+      const sizeStr = sizeMatch[1];
+      if (['Fine', 'Diminutive', 'Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan', 'Colossal'].includes(sizeStr)) {
+        block.size = sizeStr as CreatureSize;
+      } else if (sizeStr === 'H') {
+        block.size = 'Huge';
+      } else if (sizeStr === 'L') {
+        block.size = 'Large';
+      } else if (sizeStr === 'S') {
+        block.size = 'Small';
+      } else if (sizeStr === 'M') {
+        block.size = 'Medium';
+      }
+    }
+
+    const typeMatch = fullText.match(/Type:\s*([A-Za-z\s\-\(\)]+?)(?=\s*(?:Sub:|Init|Senses|\n|$))/i);
+    if (typeMatch) {
+      const rawType = typeMatch[1].trim();
+      block.subtypes = [];
+      // Map narrative types to mechanical types
+      if (/Fiend|Devil|Demon|Daemon|Angel|Archon|Azata|Chaos-Beast/i.test(rawType)) block.type = 'Outsider';
+      else if (/Dragon/i.test(rawType)) block.type = 'Dragon';
+      else if (/Undead/i.test(rawType)) block.type = 'Undead';
+      else if (/Beast/i.test(rawType)) block.type = 'Magical Beast';
+      else block.type = rawType.split(' ')[0] as CreatureType;
+    }
+
+    const subMatch = fullText.match(/Sub:\s*([A-Za-z\s\-\(\)]+?)(?=\s*(?:Init|Senses|\n|$))/i);
+    if (subMatch) {
+      block.subtypes = subMatch[1].split(/,\s*/).map(s => s.trim()).filter(Boolean);
+    }
   }
 
   // Detect Class Levels
