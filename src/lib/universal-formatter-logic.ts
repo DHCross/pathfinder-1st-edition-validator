@@ -333,3 +333,49 @@ export function formatStatBlock(lines: string[], currentMode: Mode): string {
 
     return out;
 }
+
+/**
+ * Convert the specific Markdown subset used by the formatter to HTML
+ * suitable for pasting into Word/LibreOffice.
+ */
+export function markdownToHtml(markdown: string): string {
+    if (!markdown) return '';
+
+    // Escape HTML special characters first to avoid XSS or rendering issues with input text
+    let html = markdown
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    // Convert Headers (e.g. ### **NAME**)
+    // We treat lines starting with ### as <h3>
+    html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+
+    // Convert Bold **text** -> <b>text</b>
+    // We use <b> because it's safer for clipboard paste than <strong> in some contexts,
+    // though modern Word handles both.
+    html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+
+    // Convert Italic *text* -> <i>text</i>
+    // (Ensure we don't match across newlines generally, or match strict pairs)
+    html = html.replace(/\*([^\*\n]+)\*/g, '<i>$1</i>');
+
+    // Handle newlines.
+    // Single newline in our format usually means a line break.
+    // Double newline means a paragraph break.
+
+    // Split by double newlines to make paragraphs
+    const paragraphs = html.split(/\n\s*\n/);
+
+    const formattedParagraphs = paragraphs.map(p => {
+        // Within a paragraph, single newlines are line breaks <br>
+        const content = p.split('\n').join('<br>');
+        // If the paragraph was a header (starts with <h3>), don't wrap in <p>
+        if (content.startsWith('<h3>')) return content;
+        return `<p style="margin-bottom: 0px; font-family: 'Times New Roman', serif; font-size: 11pt;">${content}</p>`;
+    });
+
+    return formattedParagraphs.join('\n');
+}

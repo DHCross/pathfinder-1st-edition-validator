@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './UniversalStatBlockFormatter.css';
-import { expandBlob, formatAffliction, formatStatBlock, cleanLine } from '../lib/universal-formatter-logic';
+import { expandBlob, formatAffliction, formatStatBlock, cleanLine, markdownToHtml } from '../lib/universal-formatter-logic';
 
 type Mode = 'npc' | 'monster' | 'affliction';
 
@@ -52,6 +52,7 @@ export const UniversalStatBlockFormatter: React.FC<UniversalStatBlockFormatterPr
   const [output, setOutput] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [copiedHtml, setCopiedHtml] = useState(false);
 
   const loadExample = useCallback(() => {
     setInput(EXAMPLES[mode]);
@@ -66,6 +67,24 @@ export const UniversalStatBlockFormatter: React.FC<UniversalStatBlockFormatterPr
     } catch (err) {
       console.error('Failed to copy', err);
     }
+  }, [output]);
+
+  const handleCopyHtml = useCallback(async () => {
+      if (!output) return;
+      try {
+          const html = markdownToHtml(output);
+          const blob = new Blob([html], { type: 'text/html' });
+          const textBlob = new Blob([output], { type: 'text/plain' });
+          const item = new ClipboardItem({
+              'text/html': blob,
+              'text/plain': textBlob
+          });
+          await navigator.clipboard.write([item]);
+          setCopiedHtml(true);
+          setTimeout(() => setCopiedHtml(false), 2000);
+      } catch (err) {
+          console.error('Failed to copy HTML', err);
+      }
   }, [output]);
 
   const parseAndFormat = useCallback(() => {
@@ -164,6 +183,13 @@ export const UniversalStatBlockFormatter: React.FC<UniversalStatBlockFormatterPr
             <span className="panel-title">Formatted Output (Markdown)</span>
             <div className="panel-actions">
               <button
+                className={`btn-copy ${copiedHtml ? 'copied' : ''}`}
+                onClick={handleCopyHtml}
+                title="Copy as Rich Text (Paste into Word/Docs)"
+              >
+                {copiedHtml ? '✓ Copied HTML!' : 'Copy for Word'}
+              </button>
+              <button
                 className={`btn-copy ${copied ? 'copied' : ''}`}
                 onClick={handleCopy}
               >
@@ -190,6 +216,7 @@ export const UniversalStatBlockFormatter: React.FC<UniversalStatBlockFormatterPr
           <li><strong>Manual Override:</strong> The parser respects specific values like <code className="highlight-green">hp 17</code> even if math suggests otherwise.</li>
           <li><strong>Section Headers:</strong> If your input is a single blob of text, the system tries to split it by detecting headers like <code className="highlight-blue">DEFENSE</code> or <code className="highlight-blue">OFFENSE</code>.</li>
           <li><strong>Martin-Safe:</strong> Headers are automatically converted to <strong>BOLD CAPS</strong>.</li>
+          <li><strong>Export:</strong> Use <strong>Copy for Word</strong> to paste properly formatted bold text into documents.</li>
         </ul>
       </div>
     </div>

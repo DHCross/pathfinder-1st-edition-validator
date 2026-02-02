@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { expandBlob, formatAffliction, formatStatBlock } from '../src/lib/universal-formatter-logic';
+import { expandBlob, formatAffliction, formatStatBlock, markdownToHtml } from '../src/lib/universal-formatter-logic';
 
 describe('UniversalStatBlockFormatter Logic', () => {
 
@@ -84,6 +84,23 @@ describe('UniversalStatBlockFormatter Logic', () => {
       expect(res).toContain('### **SPACE PLAGUE**');
       expect(res).toContain('**Type** disease');
       expect(res).toContain('**Save** Fortitude DC 20');
+    });
+  });
+
+  describe('markdownToHtml', () => {
+    it('converts markdown to html', () => {
+      const md = "**Bold** Text\nNew Line\n\nNew Paragraph";
+      const html = markdownToHtml(md);
+
+      expect(html).toContain('<b>Bold</b> Text');
+      expect(html).toContain('<br>'); // Single newline
+      expect(html).toContain('<p style'); // Paragraph wrapper
+    });
+
+    it('handles headers', () => {
+        const md = "### **Header**";
+        const html = markdownToHtml(md);
+        expect(html).toContain('<h3><b>Header</b></h3>');
     });
   });
 
