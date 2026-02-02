@@ -37,9 +37,9 @@ If a previous deployment failed and you want to retry without making code change
 3. Find the failed workflow run
 4. Click **Re-run jobs** → **Re-run all jobs**
 
-### Method 3: Force Push (Use with Caution)
+### Method 3: Empty Commit
 
-If you need to force a redeploy of the exact same code:
+If you need to trigger a redeploy of the exact same code without making changes:
 
 ```bash
 git commit --allow-empty -m "Trigger redeploy"

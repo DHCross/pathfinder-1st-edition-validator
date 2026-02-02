@@ -122,10 +122,6 @@ console.log(result.messages);
 
 ## Documentation
 
-### Deployment
-
-For information on how to deploy or redeploy the application, see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
-
 ### Project Blueprint
 
 The detailed architecture and feature set for a proposed Monster & NPC Builder app, named **Bestiary Architect**, is documented in `docs/Bestiary_Architect_Blueprint.md`. This document outlines the vision, modular architecture, and user workflows for a rules-grounded and creativity-focused builder.
