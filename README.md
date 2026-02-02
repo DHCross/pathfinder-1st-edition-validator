@@ -95,6 +95,10 @@ npm run dev
 npm test
 ```
 
+### Deployment
+
+This project is automatically deployed to GitHub Pages when changes are pushed to the `main` branch. For detailed deployment instructions, see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+
 ## Usage Example
 
 ```typescript
@@ -118,9 +122,15 @@ console.log(result.messages);
 
 ## Documentation
 
-## Project Blueprint
+### Deployment
+
+For information on how to deploy or redeploy the application, see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+
+### Project Blueprint
 
 The detailed architecture and feature set for a proposed Monster & NPC Builder app, named **Bestiary Architect**, is documented in `docs/Bestiary_Architect_Blueprint.md`. This document outlines the vision, modular architecture, and user workflows for a rules-grounded and creativity-focused builder.
+
+### Rules Documentation
 
 See the `Rules/` directory for detailed specifications:
 
