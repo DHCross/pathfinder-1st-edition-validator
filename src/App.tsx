@@ -6,6 +6,7 @@ import BestiaryArchitectApp from './modules/BestiaryArchitectApp';
 import { ValidatorPlayground } from './components/ValidatorPlayground';
 import { CreatureScaler } from './components/CreatureScaler';
 import TableToTSVConverter from './components/TableToTSVConverter';
+import { UniversalStatBlockFormatter } from './components/UniversalStatBlockFormatter';
 import { DocumentValidator } from './components/DocumentValidator';
 import { PF1eStatBlock } from './types/PF1eStatBlock';
 
@@ -33,7 +34,7 @@ const DEFAULT_SCALER_BLOCK: PF1eStatBlock = {
   racialHD: 2,
 };
 
-type ModuleKey = 'validator' | 'document-validator' | 'architect' | 'scaler' | 'converter';
+type ModuleKey = 'validator' | 'document-validator' | 'architect' | 'scaler' | 'converter' | 'universal-formatter';
 
 interface ModuleInfo {
   key: ModuleKey;
@@ -78,6 +79,13 @@ const MODULES: ModuleInfo[] = [
     label: 'Table → TSV Converter',
     icon: '📋',
     description: 'Convert HTML tables to tab-delimited format for InDesign import',
+  },
+  {
+    key: 'universal-formatter',
+    path: '/universal-formatter',
+    label: 'Universal Formatter',
+    icon: '🧹',
+    description: 'Clean and reformat stat blocks for publication (Martin-safe)',
   },
 ];
 
@@ -147,6 +155,7 @@ function App() {
           <Route path="/architect" element={<BestiaryArchitectApp />} />
           <Route path="/scaler" element={<CreatureScaler initialBlock={DEFAULT_SCALER_BLOCK} />} />
           <Route path="/converter" element={<TableToTSVConverter />} />
+          <Route path="/universal-formatter" element={<UniversalStatBlockFormatter />} />
 
           {/* 404 fallback */}
           <Route
