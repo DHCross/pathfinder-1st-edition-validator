@@ -6,12 +6,21 @@ This project is automatically deployed to GitHub Pages using GitHub Actions. The
 
 ## How Deployment Works
 
-The repository uses a GitHub Actions workflow (`.github/workflows/deploy-storybook.yml`) that:
+The repository uses a modern GitHub Actions workflow (`.github/workflows/deploy-storybook.yml`) that:
 
 1. **Triggers** on every push to the `main` branch
-2. **Builds** the React application using `npm run build`
-3. **Deploys** the `./dist` folder to GitHub Pages
-4. **Publishes** the site to `https://<username>.github.io/<repository-name>/`
+2. **Build Job**: Builds the React application using `npm run build`
+3. **Artifact Upload**: Uploads the `./dist` folder as a GitHub Pages artifact
+4. **Deploy Job**: Deploys the artifact to GitHub Pages using the modern Pages deployment action
+5. **Publishes** the site to `https://<username>.github.io/<repository-name>/`
+
+### Workflow Architecture
+
+The workflow uses a two-job architecture:
+- **Build Job**: Creates the production build and uploads it as an artifact
+- **Deploy Job**: Downloads the artifact and deploys it to GitHub Pages
+
+This approach provides better isolation, faster builds, and more reliable deployments.
 
 ## How to Redeploy After a Push
 
@@ -81,8 +90,15 @@ After adding this, you can:
 ### View Deployment Logs
 
 1. Click on a workflow run
-2. Click on the **build-and-deploy** job
+2. You'll see two separate jobs:
+   - **build**: Shows the build process and artifact upload
+   - **deploy**: Shows the Pages deployment process
 3. Expand each step to see detailed logs
+
+### Understanding Job Status
+
+- **Build Job**: If this fails, check for TypeScript errors, missing dependencies, or build configuration issues
+- **Deploy Job**: If this fails, check for permissions issues, Pages configuration, or artifact problems
 
 ### Access the Deployed Site
 
@@ -105,6 +121,23 @@ If deployment fails:
    - **Test failures**: Ensure all tests pass locally with `npm test`
    - **Dependencies**: Run `npm ci` locally to verify dependencies install correctly
    - **Permissions**: Ensure the repository has GitHub Pages enabled with proper permissions
+   - **Missing .nojekyll file**: For non-Jekyll sites, add an empty `.nojekyll` file to the root
+   - **Artifact errors**: Ensure the build job completes successfully and uploads the artifact
+   - **Pages permissions**: Verify the workflow has `pages: write` and `id-token: write` permissions
+
+### Common Modern Workflow Issues
+
+#### "No artifacts named 'github-pages' were found"
+- **Cause**: The build job failed or didn't upload the artifact
+- **Fix**: Check the build job logs for errors, ensure `npm run build` succeeds
+
+#### "Site contained a symlink that should be dereferenced"
+- **Cause**: Build output contains symbolic links
+- **Fix**: Configure build process to resolve symlinks or remove them
+
+#### "Pages is not enabled for this repository"
+- **Cause**: GitHub Pages not configured in repository settings
+- **Fix**: Go to Settings → Pages → Enable GitHub Pages
 
 ### Changes Not Appearing
 
@@ -121,9 +154,10 @@ If GitHub Pages is not set up:
 
 1. Go to repository **Settings**
 2. Navigate to **Pages** in the left sidebar
-3. Under **Source**, select **Deploy from a branch**
-4. Select the **gh-pages** branch (created by the workflow)
-5. Click **Save**
+3. Under **Source**, select **GitHub Actions** (recommended for modern workflows)
+4. Click **Save**
+
+**Note**: The modern workflow uses GitHub Actions deployment, not branch deployment. Selecting "GitHub Actions" as the source allows the workflow to manage the deployment automatically.
 
 ## Local Development vs Production
 
