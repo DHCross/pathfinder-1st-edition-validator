@@ -6,6 +6,10 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.0.0
 
 ## [Unreleased]
 
+### Changed
+- Triggered redeployment to GitHub Pages
+
+### Planned
 - Future validators for basics (HD, BAB, saves), skills, feats, AC/CMD, and Storybook integration.
 
 ## [0.1.0] - 2025-11-19
