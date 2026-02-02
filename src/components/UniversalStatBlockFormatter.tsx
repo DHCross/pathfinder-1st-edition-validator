@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './UniversalStatBlockFormatter.css';
-import { expandBlob, formatAffliction, formatStatBlock, cleanLine, markdownToHtml } from '../lib/universal-formatter-logic';
+import { expandBlob, formatAffliction, formatStatBlock, markdownToHtml } from '../lib/universal-formatter-logic';
 
 type Mode = 'npc' | 'monster' | 'affliction';
 

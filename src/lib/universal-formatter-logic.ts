@@ -191,12 +191,6 @@ export function formatStatBlock(lines: string[], currentMode: Mode): string {
     // Extract specific fields from sections if not found globally
     // (The global findLine above works okay, but let's refine Offense/Special stuff)
 
-    // Filter out known lines from the generic buckets to avoid duplication
-    const filterKnown = (linesArr: string[], prefixes: string[]) => {
-        return linesArr.filter(l => !prefixes.some(p => l.toLowerCase().startsWith(p.toLowerCase())));
-    };
-
-    const offenseRest = filterKnown(sections.offense, ['Speed', 'Melee', 'Ranged', 'Space', 'Reach', 'Special Attacks', 'Spells']);
     const meleeLine = sections.offense.find(l => l.toLowerCase().startsWith('melee')) || findLine(['Melee']);
     const rangedLine = sections.offense.find(l => l.toLowerCase().startsWith('ranged')) || findLine(['Ranged']);
     const spaceLine = sections.offense.find(l => l.toLowerCase().startsWith('space')) || findLine(['Space']);
