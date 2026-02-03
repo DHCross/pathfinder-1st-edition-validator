@@ -1,9 +1,15 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import './HtmlNoiseStripper.css';
-import { markdownToHtml } from '../lib/universal-formatter-logic';
+import {
+  expandBlob,
+  formatAffliction,
+  formatStatBlock,
+  markdownToHtml,
+} from '../lib/universal-formatter-logic';
 
 type SourceType = 'empty' | 'text' | 'html' | 'word';
 type OutputMode = 'text' | 'markdown' | 'word';
+type FormatMode = 'raw' | 'npc' | 'monster' | 'affliction';
 
 type StripOptions = {
   preserveBlankLines: boolean;
@@ -171,6 +177,59 @@ const htmlToMarkdown = (input: string): string => {
   return collapsed.join('\n').trim();
 };
 
+const BOILERPLATE_PATTERNS: RegExp[] = [
+  /Hero Lab and the Hero Lab logo/i,
+  /LWD Technology/i,
+  /Free demo available at/i,
+  /^Pathfinder\b/i,
+  /Paizo Inc/i,
+];
+
+const postProcessText = (text: string, options: StripOptions): string => {
+  if (!text.trim()) return '';
+
+  let output = text;
+  // Remove Word comment blocks like [Comment by ...]
+  output = output.replace(/\s*\[[Cc]omment by[\s\S]*?\]\s*/g, ' ');
+  // Remove inline "created with Hero Lab" phrases
+  output = output.replace(/\s*-?\s*created with Hero Lab®?/gi, '');
+  // Remove stray backslashes from Word/RTF exports
+  output = output.replace(/\\/g, '');
+
+  if (options.compactWhitespace) {
+    output = output.replace(/[ \t]+/g, ' ');
+  }
+
+  // Drop boilerplate/legal footer lines
+  const lines = output.split('\n').filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return true;
+    return !BOILERPLATE_PATTERNS.some((pattern) => pattern.test(trimmed));
+  });
+  output = lines.join('\n');
+
+  // Clean trailing whitespace per line
+  output = output.replace(/[ \t]+$/gm, '');
+
+  if (options.preserveBlankLines) {
+    output = output.replace(/\n{3,}/g, '\n\n');
+  } else {
+    output = output
+      .split('\n')
+      .filter((line) => line.trim().length > 0)
+      .join('\n');
+  }
+
+  return output.trim();
+};
+
+const stripMarkdownFormatting = (text: string): string => {
+  return text
+    .replace(/^###\s+/gm, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*([^\*\n]+)\*/g, '$1');
+};
+
 const stripHtmlNoise = (input: string, options: StripOptions): string => {
   if (!input.trim()) return '';
 
@@ -238,6 +297,7 @@ export function HtmlNoiseStripper() {
   const [compactWhitespace, setCompactWhitespace] = useState(true);
   const [listBullets, setListBullets] = useState(true);
   const [outputMode, setOutputMode] = useState<OutputMode>('markdown');
+  const [formatMode, setFormatMode] = useState<FormatMode>('npc');
   const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const [copiedHtml, setCopiedHtml] = useState(false);
 
@@ -257,9 +317,39 @@ export function HtmlNoiseStripper() {
     return cleanedText;
   }, [input, cleanedText, detectedSource]);
 
-  const wordHtml = useMemo(() => markdownToHtml(markdownOutput), [markdownOutput]);
-  const previewText =
-    outputMode === 'word' ? wordHtml : outputMode === 'text' ? cleanedText : markdownOutput;
+  const normalizedText = useMemo(
+    () => postProcessText(cleanedText, options),
+    [cleanedText, options],
+  );
+  const normalizedMarkdown = useMemo(
+    () => postProcessText(markdownOutput, options),
+    [markdownOutput, options],
+  );
+
+  const formattedOutput = useMemo(() => {
+    if (formatMode === 'raw') return '';
+    if (!normalizedMarkdown.trim()) return '';
+    const expanded = expandBlob(normalizedMarkdown);
+    const lines = expanded
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    if (lines.length === 0) return '';
+    if (formatMode === 'affliction') return formatAffliction(lines);
+    return formatStatBlock(lines, formatMode);
+  }, [normalizedMarkdown, formatMode]);
+
+  const markdownForCopy = formatMode === 'raw' ? normalizedMarkdown : formattedOutput;
+  const wordHtml = useMemo(() => markdownToHtml(markdownForCopy), [markdownForCopy]);
+  const previewText = useMemo(() => {
+    if (formatMode === 'raw') {
+      if (outputMode === 'word') return wordHtml;
+      return outputMode === 'text' ? normalizedText : normalizedMarkdown;
+    }
+    if (outputMode === 'word') return wordHtml;
+    if (outputMode === 'text') return stripMarkdownFormatting(formattedOutput);
+    return formattedOutput;
+  }, [formatMode, formattedOutput, normalizedMarkdown, normalizedText, outputMode, wordHtml]);
 
   const stats = useMemo(() => {
     const inputLines = input.trim() ? input.trim().split(/\r?\n/).length : 0;
@@ -268,22 +358,22 @@ export function HtmlNoiseStripper() {
   }, [input, previewText]);
 
   const handleCopyMarkdown = useCallback(async () => {
-    if (!markdownOutput) return;
+    if (!markdownForCopy) return;
     try {
-      await navigator.clipboard.writeText(markdownOutput);
+      await navigator.clipboard.writeText(markdownForCopy);
       setCopiedMarkdown(true);
       setTimeout(() => setCopiedMarkdown(false), 2000);
     } catch (err) {
       console.error('Failed to copy', err);
     }
-  }, [markdownOutput]);
+  }, [markdownForCopy]);
 
   const handleCopyHtml = useCallback(async () => {
-    if (!markdownOutput) return;
+    if (!markdownForCopy) return;
     try {
       const html = wordHtml;
       const blob = new Blob([html], { type: 'text/html' });
-      const textBlob = new Blob([markdownOutput], { type: 'text/plain' });
+      const textBlob = new Blob([markdownForCopy], { type: 'text/plain' });
       const item = new ClipboardItem({
         'text/html': blob,
         'text/plain': textBlob,
@@ -294,16 +384,29 @@ export function HtmlNoiseStripper() {
     } catch (err) {
       console.error('Failed to copy HTML', err);
     }
-  }, [markdownOutput, wordHtml]);
+  }, [markdownForCopy, wordHtml]);
 
   return (
     <div className="html-stripper">
       <header className="module-header">
         <h1>HTML Stripper</h1>
-        <p>Strip HTML and Word noise from stat blocks. This tool does not validate stats.</p>
+        <p>Strip HTML/Word noise and optionally reformat into PF1e stat blocks. This tool does not validate stats.</p>
       </header>
 
       <section className="stripper-controls card">
+        <div className="control-group">
+          <label htmlFor="format-mode">Format as</label>
+          <select
+            id="format-mode"
+            value={formatMode}
+            onChange={(e) => setFormatMode(e.target.value as FormatMode)}
+          >
+            <option value="raw">Raw (strip only)</option>
+            <option value="npc">PF1e NPC</option>
+            <option value="monster">PF1e Monster</option>
+            <option value="affliction">PF1e Affliction</option>
+          </select>
+        </div>
         <div className="control-group">
           <label htmlFor="output-mode">Output preview</label>
           <select
