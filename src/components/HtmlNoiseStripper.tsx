@@ -335,8 +335,8 @@ export function HtmlNoiseStripper() {
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
     if (lines.length === 0) return '';
-    if (formatMode === 'affliction') return formatAffliction(lines);
-    return formatStatBlock(lines, formatMode);
+    if (formatMode === 'affliction') return formatAffliction(lines, { preserveValues: true });
+    return formatStatBlock(lines, formatMode, { preserveValues: true });
   }, [normalizedMarkdown, formatMode]);
 
   const markdownForCopy = formatMode === 'raw' ? normalizedMarkdown : formattedOutput;

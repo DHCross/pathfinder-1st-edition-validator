@@ -2,6 +2,10 @@
 
 type Mode = 'npc' | 'monster' | 'affliction';
 
+export type FormatOptions = {
+    preserveValues?: boolean;
+};
+
 /**
  * Clean text of markdown artifacts for processing, but keep the values.
  */
@@ -47,10 +51,11 @@ export function expandBlob(text: string): string {
   return text;
 }
 
-export function formatAffliction(lines: string[]): string {
+export function formatAffliction(lines: string[], options: FormatOptions = {}): string {
     // Affliction logic: Simple Key-Value extraction
     // Expected format: Name on line 1, then "Type: ...", "Save: ...", etc.
-    let name = cleanLine(lines[0]);
+    const preserveValues = options.preserveValues ?? false;
+    let name = cleanLine(lines[0] ?? '');
     let fields: Record<string, string> = {};
 
     lines.slice(1).forEach(line => {
@@ -63,23 +68,59 @@ export function formatAffliction(lines: string[]): string {
         }
     });
 
-    // Construct output
-    const type = fields['type'] || 'disease';
-    const save = fields['save'] || fields['fortitude'] || fields['fort'] || 'Fortitude DC XX';
-    const onset = fields['onset'] || '1 day';
-    const frequency = fields['frequency'] || '1/day';
-    const effect = fields['effect'] || '1d2 Con damage';
-    const cure = fields['cure'] || '2 consecutive saves';
+    if (!preserveValues) {
+        // Construct output with defaults
+        const type = fields['type'] || 'disease';
+        const save = fields['save'] || fields['fortitude'] || fields['fort'] || 'Fortitude DC XX';
+        const onset = fields['onset'] || '1 day';
+        const frequency = fields['frequency'] || '1/day';
+        const effect = fields['effect'] || '1d2 Con damage';
+        const cure = fields['cure'] || '2 consecutive saves';
 
-    const res = `### **${name.toUpperCase()}**
+        const res = `### **${name.toUpperCase()}**
 **Type** ${type}; **Save** ${save}
 **Onset** ${onset}; **Frequency** ${frequency}
 **Effect** ${effect}; **Cure** ${cure}`;
 
-    return res;
+        return res;
+    }
+
+    // Preserve-only output (no invented defaults)
+    const output: string[] = [];
+    if (name) output.push(`### **${name.toUpperCase()}**`);
+
+    const type = fields['type'];
+    const save = fields['save'] || fields['fortitude'] || fields['fort'];
+    if (type || save) {
+        const parts = [];
+        if (type) parts.push(`**Type** ${type}`);
+        if (save) parts.push(`**Save** ${save}`);
+        output.push(parts.join('; '));
+    }
+
+    const onset = fields['onset'];
+    const frequency = fields['frequency'];
+    if (onset || frequency) {
+        const parts = [];
+        if (onset) parts.push(`**Onset** ${onset}`);
+        if (frequency) parts.push(`**Frequency** ${frequency}`);
+        output.push(parts.join('; '));
+    }
+
+    const effect = fields['effect'];
+    const cure = fields['cure'];
+    if (effect || cure) {
+        const parts = [];
+        if (effect) parts.push(`**Effect** ${effect}`);
+        if (cure) parts.push(`**Cure** ${cure}`);
+        output.push(parts.join('; '));
+    }
+
+    return output.join('\n');
 }
 
-export function formatStatBlock(lines: string[], currentMode: Mode): string {
+export function formatStatBlock(lines: string[], currentMode: Mode, options: FormatOptions = {}): string {
+    const preserveValues = options.preserveValues ?? false;
     // Helper to find a line starting with one of the keywords
     const findLine = (keywords: string[]) => {
         const found = lines.find(l => {
@@ -89,10 +130,257 @@ export function formatStatBlock(lines: string[], currentMode: Mode): string {
         return found ? cleanLine(found) : "";
     };
 
+    if (preserveValues) {
+        const cleanedLines = lines.map(cleanLine).filter(l => l.length > 0);
+        if (cleanedLines.length === 0) return '';
+
+        const findLineIndex = (keywords: string[]) => {
+            return cleanedLines.findIndex(l => {
+                const lower = l.toLowerCase();
+                return keywords.some(k => lower.startsWith(k.toLowerCase()));
+            });
+        };
+
+        const nameLine = cleanedLines[0] ?? '';
+        let name = nameLine;
+        let cr: string | null = null;
+        const crMatch = nameLine.match(/(?:CR|Challenge Rating)\s*(\d+(?:[\/\.]\d+)?)/i);
+        let crLineIdx = -1;
+        if (crMatch) {
+            cr = crMatch[1];
+            name = nameLine.substring(0, crMatch.index).trim();
+        } else {
+            crLineIdx = findLineIndex(['CR', 'Challenge Rating']);
+            if (crLineIdx >= 0 && cleanedLines[crLineIdx] !== nameLine) {
+                const m = cleanedLines[crLineIdx].match(/CR\s*(\d+(?:[\/\.]\d+)?)/i);
+                if (m) cr = m[1];
+            }
+        }
+
+        const xpLineIdx = findLineIndex(['XP']);
+        const xpLine = xpLineIdx >= 0 ? cleanedLines[xpLineIdx] : '';
+        let xp: string | null = null;
+        if (xpLine) {
+            const m = xpLine.match(/XP\s*([0-9,]+)/i);
+            xp = m ? m[1] : xpLine.replace(/^XP\s*/i, '').trim();
+        }
+
+        let typeLine = '';
+        let typeLineIdx = -1;
+        if (cleanedLines[1] && !cleanedLines[1].toLowerCase().startsWith('xp')) {
+            typeLine = cleanedLines[1];
+            typeLineIdx = 1;
+        } else if (cleanedLines[2]) {
+            typeLine = cleanedLines[2];
+            typeLineIdx = 2;
+        }
+
+        const initLineIdx = findLineIndex(['Init']);
+        const initLine = initLineIdx >= 0 ? cleanedLines[initLineIdx] : '';
+        const sensesLineIdx = findLineIndex(['Senses']);
+        const sensesLine = sensesLineIdx >= 0 ? cleanedLines[sensesLineIdx] : '';
+
+        const skipIndices = new Set<number>();
+        if (initLineIdx >= 0) skipIndices.add(initLineIdx);
+        if (sensesLineIdx >= 0) skipIndices.add(sensesLineIdx);
+        if (xpLineIdx >= 0) skipIndices.add(xpLineIdx);
+        if (typeLineIdx >= 0) skipIndices.add(typeLineIdx);
+        skipIndices.add(0);
+        if (crLineIdx >= 0) skipIndices.add(crLineIdx);
+
+        let sections: Record<string, string[]> = {
+            defense: [],
+            offense: [],
+            tactics: [],
+            stats: [],
+            ecology: [],
+            special: []
+        };
+
+        let currentSectionKey = 'stats';
+        cleanedLines.forEach((line, index) => {
+            if (skipIndices.has(index)) return;
+            const lower = line.toLowerCase();
+
+            if (lower.startsWith('defense') && line.length < 10) { currentSectionKey = 'defense'; return; }
+            if (lower.startsWith('offense') && line.length < 10) { currentSectionKey = 'offense'; return; }
+            if (lower.startsWith('tactics') && line.length < 10) { currentSectionKey = 'tactics'; return; }
+            if (lower.startsWith('statistics') && line.length < 15) { currentSectionKey = 'stats'; return; }
+            if (lower.startsWith('ecology') && line.length < 10) { currentSectionKey = 'ecology'; return; }
+            if (lower.startsWith('special abilities')) { currentSectionKey = 'special'; return; }
+
+            sections[currentSectionKey].push(line);
+        });
+
+        const useLine = (section: string[], predicate: (line: string) => boolean) => {
+            const index = section.findIndex(predicate);
+            if (index === -1) return '';
+            const line = section[index];
+            section.splice(index, 1);
+            return line;
+        };
+        const useLineAny = (predicate: (line: string) => boolean) => {
+            for (const key of Object.keys(sections)) {
+                const line = useLine(sections[key], predicate);
+                if (line) return line;
+            }
+            return '';
+        };
+
+        const out: string[] = [];
+        if (name) {
+            out.push(cr ? `**${name.toUpperCase()}**   **CR ${cr}**` : `**${name.toUpperCase()}**`);
+        }
+        if (xp) out.push(`**XP ${xp}**`);
+        if (typeLine) out.push(typeLine);
+
+        if (initLine || sensesLine) {
+            if (initLine) {
+                const initText = initLine.replace(/^Init\s*/i, '').trim();
+                if (initText) {
+                    let initOutput = `**Init** ${initText}`;
+                    if (!/Senses/i.test(initLine) && sensesLine) {
+                        const sensesText = sensesLine.replace(/^Senses\s*/i, '').trim();
+                        if (sensesText) initOutput += `; **Senses** ${sensesText}`;
+                    }
+                    out.push(initOutput);
+                }
+            } else if (sensesLine) {
+                const sensesText = sensesLine.replace(/^Senses\s*/i, '').trim();
+                if (sensesText) out.push(`**Senses** ${sensesText}`);
+            }
+            out.push('');
+        }
+
+        const defenseLines: string[] = [];
+        const acLine = useLineAny(l => l.toLowerCase().startsWith('ac')) || findLine(['AC']);
+        if (acLine) defenseLines.push(`**AC** ${acLine.replace(/^AC\s*/i, '')}`);
+        const hpLine = useLineAny(l => l.toLowerCase().startsWith('hp')) || findLine(['hp', 'HP']);
+        if (hpLine) defenseLines.push(`**hp** ${hpLine.replace(/^(hp|HP)\s*/i, '')}`);
+
+        const fortLine = useLineAny(l => l.toLowerCase().startsWith('fort')) || findLine(['Fort']);
+        const refLine = useLineAny(l => l.toLowerCase().startsWith('ref')) || findLine(['Ref']);
+        const willLine = useLineAny(l => l.toLowerCase().startsWith('will')) || findLine(['Will']);
+        const hasCombinedSaves = fortLine && /ref|will/i.test(fortLine);
+        if (fortLine || refLine || willLine) {
+            const savesText = hasCombinedSaves
+                ? fortLine
+                : [fortLine, refLine, willLine].filter(Boolean).join(', ');
+            if (savesText) defenseLines.push(`**${savesText}**`);
+        }
+
+        const extraDefense = sections.defense;
+        extraDefense.forEach(line => defenseLines.push(line));
+
+        if (defenseLines.length > 0) {
+            out.push('**DEFENSE**');
+            defenseLines.forEach(line => out.push(line));
+            out.push('');
+        }
+
+        const offenseLines: string[] = [];
+        const speedLine = useLineAny(l => l.toLowerCase().startsWith('speed')) || findLine(['Speed']);
+        if (speedLine) offenseLines.push(`**Speed** ${speedLine.replace(/^Speed\s*/i, '')}`);
+        const meleeLine = useLineAny(l => l.toLowerCase().startsWith('melee')) || findLine(['Melee']);
+        if (meleeLine) offenseLines.push(`**Melee** ${meleeLine.replace(/^Melee\s*/i, '')}`);
+        const rangedLine = useLineAny(l => l.toLowerCase().startsWith('ranged')) || findLine(['Ranged']);
+        if (rangedLine) offenseLines.push(`**Ranged** ${rangedLine.replace(/^Ranged\s*/i, '')}`);
+        const spaceLine = useLineAny(l => l.toLowerCase().startsWith('space')) || findLine(['Space']);
+        if (spaceLine) offenseLines.push(`**${spaceLine}**`);
+        const specialAttacksLine = useLineAny(l => l.toLowerCase().startsWith('special attacks')) || findLine(['Special Attacks']);
+        if (specialAttacksLine) offenseLines.push(`**Special Attacks** ${specialAttacksLine.replace(/^Special Attacks\s*/i, '')}`);
+
+        sections.offense.forEach(line => offenseLines.push(line));
+
+        if (offenseLines.length > 0) {
+            out.push('**OFFENSE**');
+            offenseLines.forEach(line => out.push(line));
+            out.push('');
+        }
+
+        if (currentMode === 'npc' && sections.tactics.length > 0) {
+            out.push('**TACTICS**');
+            sections.tactics.forEach(t => {
+                const parts = t.split(/^(Before Combat|During Combat|Morale|Base Statistics)\s*/i);
+                if (parts.length > 1) {
+                    out.push(`**${parts[1]}** ${parts[2]}`);
+                } else {
+                    out.push(t);
+                }
+            });
+            out.push('');
+        }
+
+        const statsLines: string[] = [];
+        const statBlockLine = useLineAny(l => l.toLowerCase().startsWith('str')) || findLine(['Str']);
+        if (statBlockLine) {
+            const boldStats = statBlockLine.replace(/(Str|Dex|Con|Int|Wis|Cha)\s*/g, '**$1** ');
+            statsLines.push(boldStats);
+        }
+        const babLine = useLineAny(l => l.toLowerCase().startsWith('base atk')) || findLine(['Base Atk']);
+        if (babLine) statsLines.push(`**${babLine}**`);
+
+        const featsLine = useLineAny(l => l.toLowerCase().startsWith('feats')) || findLine(['Feats']);
+        if (featsLine) statsLines.push(`**Feats** ${featsLine.replace(/^Feats\s*/i, '')}`);
+        const skillsLine = useLineAny(l => l.toLowerCase().startsWith('skills')) || findLine(['Skills']);
+        if (skillsLine) statsLines.push(`**Skills** ${skillsLine.replace(/^Skills\s*/i, '')}`);
+        const languagesLine = useLineAny(l => l.toLowerCase().startsWith('languages')) || findLine(['Languages']);
+        if (languagesLine) statsLines.push(`**Languages** ${languagesLine.replace(/^Languages\s*/i, '')}`);
+        const sqLine = useLineAny(l => l.toLowerCase().startsWith('sq')) || findLine(['SQ']);
+        if (sqLine) statsLines.push(`**SQ** ${sqLine.replace(/^SQ\s*/i, '')}`);
+
+        const gearLine = useLineAny(l => l.match(/^(Combat Gear|Other Gear|Gear|Possessions)/i));
+        if (gearLine) {
+            const m = gearLine.match(/^(Combat Gear|Other Gear|Gear|Possessions)\s*(.*)$/i);
+            if (m) {
+                statsLines.push(`**${m[1]}** ${m[2].trim()}`.trim());
+            } else {
+                statsLines.push(gearLine);
+            }
+        }
+
+        sections.stats.forEach(line => statsLines.push(line));
+
+        if (statsLines.length > 0) {
+            out.push('**STATISTICS**');
+            statsLines.forEach(line => out.push(line));
+            out.push('');
+        }
+
+        if (currentMode === 'monster' && sections.special.length > 0) {
+            out.push('**SPECIAL ABILITIES**');
+            sections.special.forEach(l => {
+                const m = l.match(/^([A-Za-z\s]+)\s*\((?:Ex|Su|Sp)\):/);
+                if (m) {
+                    out.push(`**${m[0]}** ${l.substring(m[0].length).trim()}`);
+                } else {
+                    out.push(l);
+                }
+            });
+            out.push('');
+        }
+
+        if (currentMode === 'monster' && sections.ecology.length > 0) {
+            out.push('**ECOLOGY**');
+            const env = sections.ecology.find(l => l.toLowerCase().startsWith('environment'));
+            const org = sections.ecology.find(l => l.toLowerCase().startsWith('organization'));
+            const treas = sections.ecology.find(l => l.toLowerCase().startsWith('treasure'));
+            if (env) out.push(`**Environment** ${env.replace(/^Environment\s*/i, '')}`);
+            if (org) out.push(`**Organization** ${org.replace(/^Organization\s*/i, '')}`);
+            if (treas) out.push(`**Treasure** ${treas.replace(/^Treasure\s*/i, '')}`);
+            sections.ecology
+                .filter(l => l !== env && l !== org && l !== treas)
+                .forEach(line => out.push(line));
+            out.push('');
+        }
+
+        return out.join('\n').trim();
+    }
+
     // Header Extraction
     // Line 1 is usually Name CR XP
     // We need to support "Name CR X" or "Name (CR X)" or just "Name"
-    let nameLine = cleanLine(lines[0]);
+    let nameLine = cleanLine(lines[0] ?? '');
     // Remove CR from name line if present
     let name = nameLine;
     let cr = "1";
