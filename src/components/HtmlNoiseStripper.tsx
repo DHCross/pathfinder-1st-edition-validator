@@ -238,7 +238,7 @@ export function HtmlNoiseStripper() {
   const [compactWhitespace, setCompactWhitespace] = useState(true);
   const [listBullets, setListBullets] = useState(true);
   const [outputMode, setOutputMode] = useState<OutputMode>('markdown');
-  const [copied, setCopied] = useState(false);
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const [copiedHtml, setCopiedHtml] = useState(false);
 
   const options: StripOptions = {
@@ -257,25 +257,26 @@ export function HtmlNoiseStripper() {
     return cleanedText;
   }, [input, cleanedText, detectedSource]);
 
-  const cleaned = outputMode === 'text' ? cleanedText : markdownOutput;
   const wordHtml = useMemo(() => markdownToHtml(markdownOutput), [markdownOutput]);
+  const previewText =
+    outputMode === 'word' ? wordHtml : outputMode === 'text' ? cleanedText : markdownOutput;
 
   const stats = useMemo(() => {
     const inputLines = input.trim() ? input.trim().split(/\r?\n/).length : 0;
-    const outputLines = cleaned.trim() ? cleaned.trim().split(/\n/).length : 0;
+    const outputLines = previewText.trim() ? previewText.trim().split(/\n/).length : 0;
     return { inputLines, outputLines };
-  }, [input, cleaned]);
+  }, [input, previewText]);
 
-  const handleCopy = useCallback(async () => {
-    if (!cleaned) return;
+  const handleCopyMarkdown = useCallback(async () => {
+    if (!markdownOutput) return;
     try {
-      await navigator.clipboard.writeText(cleaned);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(markdownOutput);
+      setCopiedMarkdown(true);
+      setTimeout(() => setCopiedMarkdown(false), 2000);
     } catch (err) {
       console.error('Failed to copy', err);
     }
-  }, [cleaned]);
+  }, [markdownOutput]);
 
   const handleCopyHtml = useCallback(async () => {
     if (!markdownOutput) return;
@@ -304,7 +305,7 @@ export function HtmlNoiseStripper() {
 
       <section className="stripper-controls card">
         <div className="control-group">
-          <label htmlFor="output-mode">Output format</label>
+          <label htmlFor="output-mode">Output preview</label>
           <select
             id="output-mode"
             value={outputMode}
@@ -404,28 +405,27 @@ export function HtmlNoiseStripper() {
           </div>
           <textarea
             className="stripper-textarea"
-            value={outputMode === 'word' ? wordHtml : cleaned}
+            value={previewText}
             readOnly
             placeholder="Cleaned text will appear here."
           />
           <div className="stripper-output-actions">
-            {outputMode === 'word' ? (
-              <button
-                className={`btn btn--primary ${copiedHtml ? 'is-copied' : ''}`}
-                onClick={handleCopyHtml}
-                disabled={!markdownOutput}
-              >
-                {copiedHtml ? 'Copied' : 'Copy for Word'}
-              </button>
-            ) : (
-              <button
-                className={`btn btn--primary ${copied ? 'is-copied' : ''}`}
-                onClick={handleCopy}
-                disabled={!cleaned}
-              >
-                {copied ? 'Copied' : 'Copy Cleaned Text'}
-              </button>
-            )}
+            <button
+              className={`btn btn--primary ${copiedHtml ? 'is-copied' : ''}`}
+              onClick={handleCopyHtml}
+              disabled={!markdownOutput}
+              title="Copy rich text for Word or Google Docs"
+            >
+              {copiedHtml ? 'Copied' : 'Copy for Word/Docs'}
+            </button>
+            <button
+              className={`btn btn--secondary ${copiedMarkdown ? 'is-copied' : ''}`}
+              onClick={handleCopyMarkdown}
+              disabled={!markdownOutput}
+              title="Copy Markdown text"
+            >
+              {copiedMarkdown ? 'Copied' : 'Copy Markdown'}
+            </button>
           </div>
         </section>
       </div>

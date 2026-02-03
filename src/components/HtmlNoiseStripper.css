@@ -82,6 +82,8 @@
   display: flex;
   justify-content: flex-end;
   margin-top: var(--space-md);
+  gap: var(--space-sm);
+  flex-wrap: wrap;
 }
 
 .btn.is-copied {
