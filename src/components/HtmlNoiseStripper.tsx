@@ -1,7 +1,9 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import './HtmlNoiseStripper.css';
+import { markdownToHtml } from '../lib/universal-formatter-logic';
 
 type SourceType = 'empty' | 'text' | 'html' | 'word';
+type OutputMode = 'text' | 'markdown' | 'word';
 
 type StripOptions = {
   preserveBlankLines: boolean;
@@ -43,6 +45,130 @@ const decodeEntities = (text: string): string => {
   const textarea = document.createElement('textarea');
   textarea.innerHTML = text;
   return textarea.value;
+};
+
+const nodeToMarkdown = (node: Node): string => {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent ?? '';
+  }
+  if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+  const el = node as HTMLElement;
+  const tag = el.tagName.toLowerCase();
+  const className = el.className || '';
+
+  if (tag === 'br') return '\n';
+  if (tag === 'hr') return '\n\n';
+  if (tag === 'sup') return '';
+
+  const childText = Array.from(el.childNodes).map(nodeToMarkdown).join('');
+
+  if (className.includes('label')) {
+    return `**${childText.trim()}**`;
+  }
+
+  if (className.includes('spell-level')) {
+    return `*${childText.trim()}*`;
+  }
+
+  if (className.includes('section-header')) {
+    const title = childText.trim().toUpperCase();
+    return title ? `\n**${title}**\n` : '';
+  }
+
+  if (tag === 'b' || tag === 'strong') {
+    return `**${childText.trim()}**`;
+  }
+
+  if (tag === 'i' || tag === 'em') {
+    return `*${childText.trim()}*`;
+  }
+
+  if (tag === 'div' || tag === 'p' || tag === 'li' || tag === 'tr') {
+    return `${childText}\n`;
+  }
+
+  return childText;
+};
+
+const htmlToMarkdown = (input: string): string => {
+  if (typeof DOMParser === 'undefined') {
+    return stripHtmlNoise(input, {
+      preserveBlankLines: true,
+      compactWhitespace: true,
+      listBullets: true,
+    });
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(input, 'text/html');
+  const body = doc.body;
+  const hasStructured = !!doc.querySelector('.stat-line, .section-header, .name, .cr, .xp, .identity');
+
+  if (hasStructured) {
+    const output: string[] = [];
+
+    const nameEl = doc.querySelector('.name');
+    const crEl = doc.querySelector('.cr');
+    if (nameEl) {
+      const name = nameEl.textContent?.trim() ?? '';
+      const cr = crEl?.textContent?.trim() ?? '';
+      output.push(cr ? `${name} ${cr}` : name);
+    }
+
+    const xpEl = doc.querySelector('.xp');
+    if (xpEl) {
+      output.push(xpEl.textContent?.trim() ?? '');
+    }
+
+    const identityEl = doc.querySelector('.identity');
+    if (identityEl) {
+      output.push(identityEl.textContent?.trim() ?? '');
+    }
+
+    const ordered = doc.querySelectorAll('.section-header, .stat-line, .flavor-text');
+    ordered.forEach((el) => {
+      const className = el.className || '';
+      if (className.includes('section-header')) {
+        const title = el.textContent?.trim().toUpperCase() ?? '';
+        if (title) {
+          output.push('');
+          output.push(`**${title}**`);
+        }
+        return;
+      }
+      if (className.includes('flavor-text')) {
+        const text = el.textContent?.trim() ?? '';
+        if (text) {
+          output.push('');
+          output.push(`_${text}_`);
+        }
+        return;
+      }
+      const lineText = Array.from(el.childNodes).map(nodeToMarkdown).join('');
+      const cleaned = lineText.replace(/\s+/g, ' ').trim();
+      if (cleaned) output.push(cleaned);
+    });
+
+    const structuredText = output
+      .map((line) => line.replace(/\s+/g, ' ').trimEnd())
+      .join('\n')
+      .trim();
+
+    if (structuredText) return structuredText;
+  }
+
+  const raw = Array.from(body.childNodes).map(nodeToMarkdown).join('');
+  const lines = raw.split('\n').map((line) => line.replace(/\s+/g, ' ').trim());
+  const collapsed: string[] = [];
+  let previousBlank = false;
+  for (const line of lines) {
+    const isBlank = line.length === 0;
+    if (isBlank && previousBlank) continue;
+    collapsed.push(line);
+    previousBlank = isBlank;
+  }
+  return collapsed.join('\n').trim();
 };
 
 const stripHtmlNoise = (input: string, options: StripOptions): string => {
@@ -111,7 +237,9 @@ export function HtmlNoiseStripper() {
   const [preserveBlankLines, setPreserveBlankLines] = useState(true);
   const [compactWhitespace, setCompactWhitespace] = useState(true);
   const [listBullets, setListBullets] = useState(true);
+  const [outputMode, setOutputMode] = useState<OutputMode>('markdown');
   const [copied, setCopied] = useState(false);
+  const [copiedHtml, setCopiedHtml] = useState(false);
 
   const options: StripOptions = {
     preserveBlankLines,
@@ -120,7 +248,17 @@ export function HtmlNoiseStripper() {
   };
 
   const detectedSource = useMemo(() => detectSourceType(input), [input]);
-  const cleaned = useMemo(() => stripHtmlNoise(input, options), [input, options]);
+  const cleanedText = useMemo(() => stripHtmlNoise(input, options), [input, options]);
+  const markdownOutput = useMemo(() => {
+    if (!input.trim()) return '';
+    if (detectedSource === 'html' || detectedSource === 'word') {
+      return htmlToMarkdown(input);
+    }
+    return cleanedText;
+  }, [input, cleanedText, detectedSource]);
+
+  const cleaned = outputMode === 'text' ? cleanedText : markdownOutput;
+  const wordHtml = useMemo(() => markdownToHtml(markdownOutput), [markdownOutput]);
 
   const stats = useMemo(() => {
     const inputLines = input.trim() ? input.trim().split(/\r?\n/).length : 0;
@@ -139,6 +277,24 @@ export function HtmlNoiseStripper() {
     }
   }, [cleaned]);
 
+  const handleCopyHtml = useCallback(async () => {
+    if (!markdownOutput) return;
+    try {
+      const html = wordHtml;
+      const blob = new Blob([html], { type: 'text/html' });
+      const textBlob = new Blob([markdownOutput], { type: 'text/plain' });
+      const item = new ClipboardItem({
+        'text/html': blob,
+        'text/plain': textBlob,
+      });
+      await navigator.clipboard.write([item]);
+      setCopiedHtml(true);
+      setTimeout(() => setCopiedHtml(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy HTML', err);
+    }
+  }, [markdownOutput, wordHtml]);
+
   return (
     <div className="html-stripper">
       <header className="module-header">
@@ -147,6 +303,18 @@ export function HtmlNoiseStripper() {
       </header>
 
       <section className="stripper-controls card">
+        <div className="control-group">
+          <label htmlFor="output-mode">Output format</label>
+          <select
+            id="output-mode"
+            value={outputMode}
+            onChange={(e) => setOutputMode(e.target.value as OutputMode)}
+          >
+            <option value="markdown">Markdown</option>
+            <option value="text">Plain Text</option>
+            <option value="word">Word (HTML)</option>
+          </select>
+        </div>
         <div className="control-group">
           <label htmlFor="preserve-blank">
             <input
@@ -236,18 +404,28 @@ export function HtmlNoiseStripper() {
           </div>
           <textarea
             className="stripper-textarea"
-            value={cleaned}
+            value={outputMode === 'word' ? wordHtml : cleaned}
             readOnly
             placeholder="Cleaned text will appear here."
           />
           <div className="stripper-output-actions">
-            <button
-              className={`btn btn--primary ${copied ? 'is-copied' : ''}`}
-              onClick={handleCopy}
-              disabled={!cleaned}
-            >
-              {copied ? 'Copied' : 'Copy Cleaned Text'}
-            </button>
+            {outputMode === 'word' ? (
+              <button
+                className={`btn btn--primary ${copiedHtml ? 'is-copied' : ''}`}
+                onClick={handleCopyHtml}
+                disabled={!markdownOutput}
+              >
+                {copiedHtml ? 'Copied' : 'Copy for Word'}
+              </button>
+            ) : (
+              <button
+                className={`btn btn--primary ${copied ? 'is-copied' : ''}`}
+                onClick={handleCopy}
+                disabled={!cleaned}
+              >
+                {copied ? 'Copied' : 'Copy Cleaned Text'}
+              </button>
+            )}
           </div>
         </section>
       </div>
