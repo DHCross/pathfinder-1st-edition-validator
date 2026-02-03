@@ -8,6 +8,7 @@ import { CreatureScaler } from './components/CreatureScaler';
 import TableToTSVConverter from './components/TableToTSVConverter';
 import { UniversalStatBlockFormatter } from './components/UniversalStatBlockFormatter';
 import { DocumentValidator } from './components/DocumentValidator';
+import { HtmlNoiseStripper } from './components/HtmlNoiseStripper';
 import { PF1eStatBlock } from './types/PF1eStatBlock';
 
 import './styles/app.css';
@@ -34,7 +35,14 @@ const DEFAULT_SCALER_BLOCK: PF1eStatBlock = {
   racialHD: 2,
 };
 
-type ModuleKey = 'validator' | 'document-validator' | 'architect' | 'scaler' | 'converter' | 'universal-formatter';
+type ModuleKey =
+  | 'validator'
+  | 'document-validator'
+  | 'architect'
+  | 'scaler'
+  | 'converter'
+  | 'html-stripper'
+  | 'universal-formatter';
 
 interface ModuleInfo {
   key: ModuleKey;
@@ -79,6 +87,13 @@ const MODULES: ModuleInfo[] = [
     label: 'Table → TSV Converter',
     icon: '📋',
     description: 'Convert HTML tables to tab-delimited format for InDesign import',
+  },
+  {
+    key: 'html-stripper',
+    path: '/html-stripper',
+    label: 'HTML Stripper',
+    icon: '🧼',
+    description: 'Strip Word/HTML noise from stat blocks (no validation)',
   },
   {
     key: 'universal-formatter',
@@ -155,6 +170,7 @@ function App() {
           <Route path="/architect" element={<BestiaryArchitectApp />} />
           <Route path="/scaler" element={<CreatureScaler initialBlock={DEFAULT_SCALER_BLOCK} />} />
           <Route path="/converter" element={<TableToTSVConverter />} />
+          <Route path="/html-stripper" element={<HtmlNoiseStripper />} />
           <Route path="/universal-formatter" element={<UniversalStatBlockFormatter />} />
 
           {/* 404 fallback */}
