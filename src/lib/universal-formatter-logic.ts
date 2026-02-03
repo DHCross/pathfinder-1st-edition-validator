@@ -329,7 +329,7 @@ export function formatStatBlock(lines: string[], currentMode: Mode, options: For
         const sqLine = useLineAny(l => l.toLowerCase().startsWith('sq')) || findLine(['SQ']);
         if (sqLine) statsLines.push(`**SQ** ${sqLine.replace(/^SQ\s*/i, '')}`);
 
-        const gearLine = useLineAny(l => l.match(/^(Combat Gear|Other Gear|Gear|Possessions)/i));
+        const gearLine = useLineAny(l => /^(Combat Gear|Other Gear|Gear|Possessions)/i.test(l));
         if (gearLine) {
             const m = gearLine.match(/^(Combat Gear|Other Gear|Gear|Possessions)\s*(.*)$/i);
             if (m) {
